@@ -1,0 +1,25 @@
+{
+  "name": "markstash",
+  "version": "1.0.0",
+  "description": "Save anything as markdown — CLI, MCP server, and Chrome extension",
+  "type": "module",
+  "bin": {
+    "markstash": "./src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "serve": "bun run src/cli.ts serve",
+    "mcp": "bun run src/cli.ts mcp",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.11.2",
+    "@mozilla/readability": "^0.5.0",
+    "linkedom": "^0.18.12",
+    "nanoid": "^5.1.6",
+    "turndown": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/turndown": "^5.0.6"
+  }
+}
