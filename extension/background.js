@@ -80,15 +80,25 @@ async function handleSaveCurrentTab(message) {
 
   if (!tab?.url) return { ok: false, error: "No active tab" };
 
+  const payload = {
+    url: tab.url,
+    title: message.title || tab.title,
+    tags: message.tags || [],
+  };
+
+  // Pass through extraction options
+  if (message.extract) {
+    payload.extract = true;
+    if (message.patterns && message.patterns.length) {
+      payload.patterns = message.patterns;
+    }
+  }
+
   try {
     const resp = await fetch(`${serverUrl}/add`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        url: tab.url,
-        title: message.title || tab.title,
-        tags: message.tags || [],
-      }),
+      body: JSON.stringify(payload),
     });
     return await resp.json();
   } catch (e) {

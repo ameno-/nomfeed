@@ -1,15 +1,20 @@
 /**
  * HTTP Server — local endpoint for Chrome extension and external tools.
  *
- * POST /add          { url, title?, tags?, selection? }
- * GET  /items        List all items (?query=&tag=&type=&limit=)
- * GET  /items/:id    Read item + content
- * DELETE /items/:id  Delete item
- * GET  /health       Health check
+ * POST /add             { url, title?, tags?, selection?, extract?, patterns? }
+ * GET  /items           List all items (?query=&tag=&type=&limit=)
+ * GET  /items/:id       Read item + content
+ * DELETE /items/:id     Delete item
+ * GET  /search?q=       Full-text search
+ * GET  /patterns        List available extraction patterns
+ * GET  /health          Health check
  */
 
 import { addItem, listItems, readContent, getItem, deleteItem, searchContent, itemCount } from "./store";
 import { urlToMarkdown, fileToMarkdown, noteToMarkdown } from "./convert";
+import { extract } from "./extract";
+import { listPatterns, DEFAULT_EXTRACT_PATTERNS } from "./patterns";
+import { isConfigured } from "./llm";
 
 export async function startServer(port: number) {
   const server = Bun.serve({
@@ -18,7 +23,6 @@ export async function startServer(port: number) {
       const url = new URL(req.url);
       const path = url.pathname;
 
-      // CORS for Chrome extension
       const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
@@ -47,7 +51,6 @@ export async function startServer(port: number) {
             source = body.url;
             result = await urlToMarkdown(body.url);
 
-            // If selection was sent from extension, prepend it
             if (body.selection) {
               result.markdown = `> **Selected text:**\n> ${body.selection}\n\n---\n\n${result.markdown}`;
             }
@@ -61,6 +64,22 @@ export async function startServer(port: number) {
             result = noteToMarkdown(body.note, body.title);
           }
 
+          // Run extraction if requested and LLM is configured
+          let extracted = false;
+          if (body.extract && isConfigured()) {
+            const patternNames = Array.isArray(body.patterns) && body.patterns.length
+              ? body.patterns
+              : DEFAULT_EXTRACT_PATTERNS;
+
+            try {
+              const extraction = await extract(result.markdown, patternNames);
+              result.markdown = result.markdown + "\n\n---\n\n# Extraction\n\n" + extraction.composed;
+              extracted = true;
+            } catch {
+              // Extraction failed — save without it
+            }
+          }
+
           const item = addItem({
             type,
             source,
@@ -70,7 +89,19 @@ export async function startServer(port: number) {
             strategy: result.strategy,
           });
 
-          return json({ ok: true, data: item }, 200, corsHeaders);
+          return json({ ok: true, data: { ...item, extracted } }, 200, corsHeaders);
+        }
+
+        // ── GET /patterns ────────────────────────────────────────────────
+        if (path === "/patterns" && req.method === "GET") {
+          const patterns = listPatterns();
+          const defaults = new Set(DEFAULT_EXTRACT_PATTERNS);
+          const data = patterns.map(p => ({
+            name: p.name,
+            description: p.description,
+            default: defaults.has(p.name),
+          }));
+          return json({ ok: true, data, llmConfigured: isConfigured() }, 200, corsHeaders);
         }
 
         // ── GET /items ───────────────────────────────────────────────────
@@ -116,7 +147,7 @@ export async function startServer(port: number) {
 
         // ── GET /health ──────────────────────────────────────────────────
         if (path === "/health") {
-          return json({ ok: true, items: itemCount() }, 200, corsHeaders);
+          return json({ ok: true, items: itemCount(), llmConfigured: isConfigured() }, 200, corsHeaders);
         }
 
         return json({ ok: false, error: "Not found" }, 404, corsHeaders);
@@ -127,7 +158,8 @@ export async function startServer(port: number) {
   });
 
   console.log(`nomfeed server running on http://localhost:${port}`);
-  console.log(`  POST /add          — Save URL/file/note`);
+  console.log(`  POST /add          — Save URL/file/note (+ optional extract)`);
+  console.log(`  GET  /patterns     — List extraction patterns`);
   console.log(`  GET  /items        — List items`);
   console.log(`  GET  /items/:id    — Read item`);
   console.log(`  DELETE /items/:id  — Delete item`);

@@ -7,7 +7,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
-      width: 320px;
+      width: 340px;
       min-height: 280px;
     }
 
@@ -58,7 +58,7 @@
       margin-bottom: 4px;
     }
 
-    input {
+    input[type="text"] {
       width: 100%;
       padding: 8px 10px;
       border: 1px solid #333;
@@ -71,8 +71,73 @@
       transition: border-color 0.15s;
     }
 
-    input:focus { border-color: #f97316; }
+    input[type="text"]:focus { border-color: #f97316; }
 
+    /* Extraction toggle */
+    .extract-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .extract-toggle input[type="checkbox"] {
+      accent-color: #f97316;
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+
+    .extract-toggle label {
+      font-size: 13px;
+      color: #ccc;
+      text-transform: none;
+      letter-spacing: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    /* Pattern chips */
+    .patterns {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #1a1a1a;
+      border-radius: 6px;
+      border: 1px solid #222;
+    }
+
+    .patterns.visible { display: flex; }
+
+    .patterns .no-llm {
+      font-size: 11px;
+      color: #888;
+      padding: 4px 0;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid #333;
+      background: #0f0f0f;
+      color: #999;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .chip:hover { border-color: #555; color: #ccc; }
+
+    .chip.selected {
+      border-color: #f97316;
+      background: rgba(249, 115, 22, 0.12);
+      color: #f97316;
+    }
+
+    /* Buttons */
     button#save {
       width: 100%;
       padding: 10px;
@@ -91,6 +156,7 @@
     button#save:active { background: #c2410c; }
     button#save:disabled { background: #333; color: #666; cursor: not-allowed; }
 
+    /* Status + CLI output */
     .status {
       margin-top: 10px;
       font-size: 12px;
@@ -101,6 +167,41 @@
     .status.success { color: #22c55e; }
     .status.error { color: #ef4444; }
 
+    .cli-output {
+      display: none;
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 12px;
+      color: #f97316;
+      cursor: pointer;
+      position: relative;
+      word-break: break-all;
+    }
+
+    .cli-output.visible { display: block; }
+
+    .cli-output:hover { border-color: #f97316; }
+
+    .cli-output .copy-hint {
+      position: absolute;
+      top: -8px;
+      right: 8px;
+      font-size: 9px;
+      color: #555;
+      background: #0f0f0f;
+      padding: 0 4px;
+      font-family: -apple-system, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .cli-output.copied { border-color: #22c55e; color: #22c55e; }
+
+    /* Footer */
     .footer {
       margin-top: 12px;
       text-align: center;
@@ -157,9 +258,23 @@
     <input type="text" id="tags" placeholder="comma, separated, tags">
   </div>
 
+  <div class="extract-toggle">
+    <input type="checkbox" id="extract">
+    <label for="extract">Extract with LLM</label>
+  </div>
+
+  <div class="patterns" id="patterns">
+    <span class="no-llm" id="no-llm" style="display:none">Set OPENROUTER_API_KEY to enable extraction</span>
+  </div>
+
   <button id="save">&#x1F374; Nom this page</button>
 
   <div class="status" id="status"></div>
+
+  <div class="cli-output" id="cli-output">
+    <span class="copy-hint">click to copy</span>
+    <span id="cli-cmd"></span>
+  </div>
 
   <div class="footer">
     <a id="settings-toggle">&#x2699; Settings</a>
