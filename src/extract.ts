@@ -41,7 +41,7 @@ export async function extract(
   for (const name of names) {
     const pattern = getPattern(name);
     if (!pattern) {
-      throw new Error(`Unknown pattern: "${name}". Run: markstash patterns`);
+      throw new Error(`Unknown pattern: "${name}". Run: nomfeed patterns`);
     }
     patterns.push(pattern);
   }

@@ -1,20 +1,20 @@
 #!/usr/bin/env bun
 /**
- * MarkStash CLI — dead-simple bookmark/file → markdown manager.
+ * NomFeed CLI — dead-simple bookmark/file → markdown manager.
  *
  * Usage:
- *   markstash add <url-or-file>       Save URL or file as markdown
- *   markstash add <yt-url> --extract  Save + run extraction patterns via LLM
- *   markstash note <text>             Save a quick note
- *   markstash list [--query q]        List saved items
- *   markstash read <id>               Output markdown content
- *   markstash search <query>          Full-text search
- *   markstash extract <id>            Run extraction patterns on existing item
- *   markstash patterns                List available extraction patterns
- *   markstash delete <id>             Remove item
- *   markstash serve [--port N]        Start HTTP server (for extension)
- *   markstash mcp                     Start MCP server (stdio)
- *   markstash status                  Show stats
+ *   nomfeed add <url-or-file>       Save URL or file as markdown
+ *   nomfeed add <yt-url> --extract  Save + run extraction patterns via LLM
+ *   nomfeed note <text>             Save a quick note
+ *   nomfeed list [--query q]        List saved items
+ *   nomfeed read <id>               Output markdown content
+ *   nomfeed search <query>          Full-text search
+ *   nomfeed extract <id>            Run extraction patterns on existing item
+ *   nomfeed patterns                List available extraction patterns
+ *   nomfeed delete <id>             Remove item
+ *   nomfeed serve [--port N]        Start HTTP server (for extension)
+ *   nomfeed mcp                     Start MCP server (stdio)
+ *   nomfeed status                  Show stats
  */
 
 import { addItem, listItems, readContent, searchContent, deleteItem, getItem, itemCount, getDataDir } from "./store";
@@ -87,7 +87,7 @@ async function main() {
     // ── add ──────────────────────────────────────────────────────────────
     case "add": {
       const target = args[1];
-      if (!target) err("Usage: markstash add <url-or-file> [--extract] [--patterns p1,p2]");
+      if (!target) err("Usage: nomfeed add <url-or-file> [--extract] [--patterns p1,p2]");
 
       const title = flag("title");
       const tags = flag("tags")?.split(",").map(t => t.trim()) || [];
@@ -151,7 +151,7 @@ async function main() {
     // ── extract ──────────────────────────────────────────────────────────
     case "extract": {
       const id = args[1];
-      if (!id) err("Usage: markstash extract <id> [--patterns p1,p2] [--model m]");
+      if (!id) err("Usage: nomfeed extract <id> [--patterns p1,p2] [--model m]");
 
       const content = readContent(id);
       if (!content) err(`Not found: ${id}`, 1);
@@ -207,7 +207,7 @@ async function main() {
           console.log(`  ${p.name.padEnd(20)} ${p.description}${def}`);
         }
         console.log(`\n${patterns.length} pattern(s). Defaults: ${DEFAULT_EXTRACT_PATTERNS.join(", ")}`);
-        console.log(`\nCustom patterns: ~/.markstash/patterns/<name>/system.md`);
+        console.log(`\nCustom patterns: ~/.nomfeed/patterns/<name>/system.md`);
       } else {
         out(patterns.map(p => ({
           name: p.name,
@@ -221,7 +221,7 @@ async function main() {
     // ── note ─────────────────────────────────────────────────────────────
     case "note": {
       const text = stripFlags(args.slice(1)).join(" ");
-      if (!text) err("Usage: markstash note <text>");
+      if (!text) err("Usage: nomfeed note <text>");
 
       const title = flag("title");
       const tags = flag("tags")?.split(",").map(t => t.trim()) || [];
@@ -251,7 +251,7 @@ async function main() {
 
       if (!json) {
         if (items.length === 0) {
-          console.log("No items saved yet. Try: markstash add <url>");
+          console.log("No items saved yet. Try: nomfeed add <url>");
           break;
         }
         for (const item of items) {
@@ -271,7 +271,7 @@ async function main() {
     case "read":
     case "cat": {
       const id = args[1];
-      if (!id) err("Usage: markstash read <id>");
+      if (!id) err("Usage: nomfeed read <id>");
 
       const content = readContent(id);
       if (!content) err(`Not found: ${id}`, 1);
@@ -289,7 +289,7 @@ async function main() {
     case "search":
     case "s": {
       const query = stripFlags(args.slice(1)).join(" ");
-      if (!query) err("Usage: markstash search <query>");
+      if (!query) err("Usage: nomfeed search <query>");
 
       const limit = flag("limit") ? parseInt(flag("limit")!) : 20;
       const results = searchContent(query, limit);
@@ -315,7 +315,7 @@ async function main() {
     case "delete":
     case "rm": {
       const id = args[1];
-      if (!id) err("Usage: markstash delete <id>");
+      if (!id) err("Usage: nomfeed delete <id>");
 
       if (deleteItem(id)) {
         out({ deleted: id });
@@ -357,7 +357,7 @@ async function main() {
     case "-h":
     case undefined: {
       console.log(`
-markstash — save anything as markdown
+nomfeed — save anything as markdown
 
 Commands:
   add <url-or-file>     Save URL or file as markdown
@@ -387,23 +387,23 @@ General Flags:
 
 Environment:
   OPENROUTER_API_KEY    Required for --extract (get at openrouter.ai/keys)
-  MARKSTASH_MODEL       Override default model (default: anthropic/claude-sonnet-4.5)
-  MARKSTASH_DIR         Override data directory (default: ~/.markstash)
+  NOMFEED_MODEL       Override default model (default: anthropic/claude-sonnet-4.5)
+  NOMFEED_DIR         Override data directory (default: ~/.nomfeed)
 
 Examples:
-  markstash add https://example.com/article
-  markstash add https://youtube.com/watch?v=xyz --extract
-  markstash add https://youtube.com/watch?v=xyz --extract --patterns wisdom,chapters,claims
-  markstash add ./report.pdf --tags work,q4
-  markstash extract abc123 --patterns summarize,rate_content
-  markstash patterns
-  markstash search "machine learning" --json
+  nomfeed add https://example.com/article
+  nomfeed add https://youtube.com/watch?v=xyz --extract
+  nomfeed add https://youtube.com/watch?v=xyz --extract --patterns wisdom,chapters,claims
+  nomfeed add ./report.pdf --tags work,q4
+  nomfeed extract abc123 --patterns summarize,rate_content
+  nomfeed patterns
+  nomfeed search "machine learning" --json
 `);
       break;
     }
 
     default:
-      err(`Unknown command: ${command}. Try: markstash help`);
+      err(`Unknown command: ${command}. Try: nomfeed help`);
   }
 }
 

@@ -126,7 +126,7 @@ export async function startServer(port: number) {
     },
   });
 
-  console.log(`markstash server running on http://localhost:${port}`);
+  console.log(`nomfeed server running on http://localhost:${port}`);
   console.log(`  POST /add          — Save URL/file/note`);
   console.log(`  GET  /items        — List items`);
   console.log(`  GET  /items/:id    — Read item`);

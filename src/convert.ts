@@ -49,7 +49,7 @@ async function tryCloudflareMarkdown(url: string): Promise<{ title: string; mark
     const resp = await fetch(url, {
       headers: {
         "Accept": "text/markdown, text/html;q=0.9",
-        "User-Agent": "MarkStash/1.0 (compatible; AI-agent)",
+        "User-Agent": "NomFeed/1.0 (compatible; AI-agent)",
       },
       redirect: "follow",
       signal: AbortSignal.timeout(15_000),
@@ -80,7 +80,7 @@ async function tryJinaReader(url: string): Promise<{ title: string; markdown: st
     const resp = await fetch(jinaUrl, {
       headers: {
         "Accept": "text/plain",
-        "User-Agent": "MarkStash/1.0",
+        "User-Agent": "NomFeed/1.0",
       },
       redirect: "follow",
       signal: AbortSignal.timeout(30_000),
@@ -103,7 +103,7 @@ async function tryJinaReader(url: string): Promise<{ title: string; markdown: st
 async function tryReadability(url: string): Promise<{ title: string; markdown: string } | null> {
   try {
     const resp = await fetch(url, {
-      headers: { "User-Agent": "MarkStash/1.0" },
+      headers: { "User-Agent": "NomFeed/1.0" },
       redirect: "follow",
       signal: AbortSignal.timeout(15_000),
     });

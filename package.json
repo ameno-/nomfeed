@@ -1,10 +1,10 @@
 {
-  "name": "markstash",
+  "name": "nomfeed",
   "version": "1.0.0",
-  "description": "Save anything as markdown — CLI, MCP server, and Chrome extension",
+  "description": "Feed your AI agents. Save any URL, video, file, or note as structured markdown. CLI + MCP + Chrome extension.",
   "type": "module",
   "bin": {
-    "markstash": "./src/cli.ts"
+    "nomfeed": "./src/cli.ts"
   },
   "scripts": {
     "start": "bun run src/cli.ts",

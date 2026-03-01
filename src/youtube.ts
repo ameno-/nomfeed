@@ -105,7 +105,7 @@ function getMetadata(url: string): YTMeta {
 // ── Transcript ─────────────────────────────────────────────────────────────
 
 function getTranscript(url: string): string {
-  const tmpDir = join(tmpdir(), `markstash-yt-${nanoid(6)}`);
+  const tmpDir = join(tmpdir(), `nomfeed-yt-${nanoid(6)}`);
   execSync(`mkdir -p "${tmpDir}"`);
 
   try {

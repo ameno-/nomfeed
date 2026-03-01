@@ -1,4 +1,4 @@
-# MarkStash — Design Document
+# NomFeed — Design Document
 
 ## What It Is
 
@@ -14,7 +14,7 @@ Chrome Extension ──→ CLI (TypeScript/Bun) ←── Coding Agents
                           │
                      MCP Server
                           │
-                     ~/.markstash/
+                     ~/.nomfeed/
                      ├── items.json        (metadata index)
                      └── content/
                          ├── abc123.md     (converted markdown)
@@ -32,28 +32,28 @@ Chrome Extension ──→ CLI (TypeScript/Bun) ←── Coding Agents
 
 ## Components
 
-### 1. CLI (`markstash`)
-- `markstash add <url>` — Fetch URL as markdown, save
-- `markstash add <file>` — Convert file via markitdown, save  
-- `markstash list [--query <q>]` — List saved items
-- `markstash read <id>` — Output markdown content
-- `markstash search <query>` — Full-text search across all content
-- `markstash delete <id>` — Remove item
-- `markstash serve` — Start local HTTP server (for Chrome extension)
-- `markstash mcp` — Start MCP server (stdio)
+### 1. CLI (`nomfeed`)
+- `nomfeed add <url>` — Fetch URL as markdown, save
+- `nomfeed add <file>` — Convert file via markitdown, save  
+- `nomfeed list [--query <q>]` — List saved items
+- `nomfeed read <id>` — Output markdown content
+- `nomfeed search <query>` — Full-text search across all content
+- `nomfeed delete <id>` — Remove item
+- `nomfeed serve` — Start local HTTP server (for Chrome extension)
+- `nomfeed mcp` — Start MCP server (stdio)
 
 ### 2. MCP Server
 Tools:
-- `markstash_add` — Save URL or file path
-- `markstash_list` — List items  
-- `markstash_read` — Read content
-- `markstash_search` — Search content
-- `markstash_delete` — Delete item
+- `nomfeed_add` — Save URL or file path
+- `nomfeed_list` — List items  
+- `nomfeed_read` — Read content
+- `nomfeed_search` — Search content
+- `nomfeed_delete` — Delete item
 
 ### 3. Chrome Extension
 - Browser action: click to save current tab
-- Context menu: right-click "Save to MarkStash"
-- Sends URL + page title + selection to `markstash serve` endpoint
+- Context menu: right-click "Save to NomFeed"
+- Sends URL + page title + selection to `nomfeed serve` endpoint
 
 ### 4. Local HTTP Server (for extension)
 - `POST /add` — `{ url, title?, selection? }`
@@ -63,7 +63,7 @@ Tools:
 
 ## Storage Format
 
-`~/.markstash/items.json`:
+`~/.nomfeed/items.json`:
 ```json
 [
   {

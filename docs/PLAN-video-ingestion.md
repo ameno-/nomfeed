@@ -1,8 +1,8 @@
-# Video Ingestion Plan — MarkStash
+# Video Ingestion Plan — NomFeed
 
 ## Problem
 
-We want `markstash add <youtube-url>` to produce rich, agent-consumable markdown — not just a summary, but structured knowledge extracted through multiple lenses.
+We want `nomfeed add <youtube-url>` to produce rich, agent-consumable markdown — not just a summary, but structured knowledge extracted through multiple lenses.
 
 ## What We Have
 
@@ -22,16 +22,16 @@ Instead of running one "summarize" prompt, we run **multiple extraction patterns
 
 ### 3. Extraction patterns are local markdown files (user-customizable)
 
-Ship with a default set of patterns inspired by Fabric. Users can add their own in `~/.markstash/patterns/`. Each pattern is just a `system.md` file — a prompt template.
+Ship with a default set of patterns inspired by Fabric. Users can add their own in `~/.nomfeed/patterns/`. Each pattern is just a `system.md` file — a prompt template.
 
 ### 4. LLM is pluggable — not baked in
 
-We don't hardcode an LLM provider. The extraction step shells out to a configurable command (e.g., `MARKSTASH_LLM_CMD="anthropic"` or `MARKSTASH_LLM_CMD="ollama run llama3"`), or uses a simple provider abstraction that supports Anthropic/OpenAI/Ollama.
+We don't hardcode an LLM provider. The extraction step shells out to a configurable command (e.g., `NOMFEED_LLM_CMD="anthropic"` or `NOMFEED_LLM_CMD="ollama run llama3"`), or uses a simple provider abstraction that supports Anthropic/OpenAI/Ollama.
 
 ### 5. Two modes: fast (transcript-only) and deep (LLM-extracted)
 
-- **Fast mode** (`markstash add <yt-url>`): Saves raw transcript + metadata as markdown. No LLM needed. Instant.
-- **Deep mode** (`markstash add <yt-url> --extract`): Runs extraction patterns against transcript. Requires LLM. Takes 30-60s.
+- **Fast mode** (`nomfeed add <yt-url>`): Saves raw transcript + metadata as markdown. No LLM needed. Instant.
+- **Deep mode** (`nomfeed add <yt-url> --extract`): Runs extraction patterns against transcript. Requires LLM. Takes 30-60s.
 
 This means the tool is always useful even without an LLM key configured.
 
@@ -40,7 +40,7 @@ This means the tool is always useful even without an LLM key configured.
 ## Architecture
 
 ```
-markstash add <youtube-url> --extract
+nomfeed add <youtube-url> --extract
     │
     ├─ 1. yt-dlp: metadata + transcript (VTT → clean text)
     │
@@ -159,7 +159,7 @@ The most important essence of this content in 15 words.
    - `extract_wisdom` — Ideas, insights, quotes, habits, facts, references, recommendations
    - `video_chapters` — Timestamped chapter outline
    - `summarize` — One-sentence summary + main points + takeaways
-2. Load user patterns from `~/.markstash/patterns/` (optional override/additions)
+2. Load user patterns from `~/.nomfeed/patterns/` (optional override/additions)
 3. Each pattern is: `{ name: string; system: string; outputSection: string }`
 
 ### Phase 3: LLM Abstraction
@@ -175,10 +175,10 @@ interface LLMProvider {
 ```
 
 Supported backends (checked in order):
-1. `MARKSTASH_LLM_CMD` env var → shell out (e.g., `echo "$input" | fabric -p extract_wisdom`)
+1. `NOMFEED_LLM_CMD` env var → shell out (e.g., `echo "$input" | fabric -p extract_wisdom`)
 2. `ANTHROPIC_API_KEY` → direct Anthropic API call
 3. `OPENAI_API_KEY` → direct OpenAI API call
-4. `MARKSTASH_OLLAMA_MODEL` → local Ollama
+4. `NOMFEED_OLLAMA_MODEL` → local Ollama
 
 ### Phase 4: Extraction Pipeline
 
@@ -191,18 +191,18 @@ Supported backends (checked in order):
 
 ### Phase 5: Wire into CLI
 
-- `markstash add <yt-url>` → fast mode (transcript only)
-- `markstash add <yt-url> --extract` → deep mode (run patterns)
-- `markstash add <yt-url> --extract --patterns wisdom,chapters` → specific patterns only
-- `markstash add <yt-url> --extract --pattern-dir ./my-patterns` → custom patterns
-- `markstash extract <id>` → run extraction on already-saved transcript (re-process)
-- `markstash patterns` → list available patterns
+- `nomfeed add <yt-url>` → fast mode (transcript only)
+- `nomfeed add <yt-url> --extract` → deep mode (run patterns)
+- `nomfeed add <yt-url> --extract --patterns wisdom,chapters` → specific patterns only
+- `nomfeed add <yt-url> --extract --pattern-dir ./my-patterns` → custom patterns
+- `nomfeed extract <id>` → run extraction on already-saved transcript (re-process)
+- `nomfeed patterns` → list available patterns
 
 ### Phase 6: MCP + Extension
 
-- `markstash_add` tool gains `extract` option
-- `markstash_extract` new tool to re-extract from existing items
-- `markstash_patterns` new tool to list available patterns
+- `nomfeed_add` tool gains `extract` option
+- `nomfeed_extract` new tool to re-extract from existing items
+- `nomfeed_patterns` new tool to list available patterns
 - Extension gets "Extract Wisdom" button for YouTube tabs
 
 ---

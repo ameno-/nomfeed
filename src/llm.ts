@@ -2,7 +2,7 @@
  * LLM — thin provider layer over OpenRouter.
  *
  * Single API endpoint, one env var: OPENROUTER_API_KEY
- * Model fallback chain: user override → MARKSTASH_MODEL → sonnet 4.5 → sonnet 4 → haiku
+ * Model fallback chain: user override → NOMFEED_MODEL → sonnet 4.5 → sonnet 4 → haiku
  *
  * All keys come from shell env. No config files.
  */
@@ -34,7 +34,7 @@ function getApiKey(): string {
 }
 
 function getModel(override?: string): string {
-  return override || process.env.MARKSTASH_MODEL || MODEL_CHAIN[0];
+  return override || process.env.NOMFEED_MODEL || MODEL_CHAIN[0];
 }
 
 export async function complete(
@@ -58,8 +58,8 @@ export async function complete(
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://github.com/markstash",
-          "X-Title": "MarkStash",
+          "HTTP-Referer": "https://github.com/nomfeed",
+          "X-Title": "NomFeed",
         },
         body: JSON.stringify({
           model,

@@ -1,5 +1,5 @@
 /**
- * MarkStash Chrome Extension — Background Service Worker
+ * NomFeed Chrome Extension — Background Service Worker
  */
 
 const DEFAULT_SERVER = "http://localhost:24242";
@@ -19,13 +19,13 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: "save-page",
-      title: "Save page to MarkStash",
+      title: "Save page to NomFeed",
       contexts: ["page", "link"],
     });
 
     chrome.contextMenus.create({
       id: "save-selection",
-      title: "Save selection to MarkStash",
+      title: "Save selection to NomFeed",
       contexts: ["selection"],
     });
   });
@@ -57,7 +57,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const data = await resp.json();
     showBadge(tab?.id, data.ok ? "✓" : "✗", data.ok ? "#22c55e" : "#ef4444");
   } catch (e) {
-    console.error("MarkStash: Failed to save", e);
+    console.error("NomFeed: Failed to save", e);
     showBadge(tab?.id, "!", "#f59e0b");
   }
 });
@@ -94,7 +94,7 @@ async function handleSaveCurrentTab(message) {
   } catch (e) {
     return {
       ok: false,
-      error: `Cannot connect to markstash server at ${serverUrl}.\nRun: markstash serve`,
+      error: `Cannot connect to nomfeed server at ${serverUrl}.\nRun: nomfeed serve`,
     };
   }
 }

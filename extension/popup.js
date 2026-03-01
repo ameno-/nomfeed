@@ -1,5 +1,5 @@
 /**
- * MarkStash Chrome Extension — Popup Script
+ * NomFeed Chrome Extension — Popup Script
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
       { type: "save-current-tab", title: titleEl.value, tags },
       (response) => {
         saveBtn.disabled = false;
-        saveBtn.textContent = "Save to MarkStash";
+        saveBtn.textContent = "Save to NomFeed";
 
         if (chrome.runtime.lastError) {
           statusEl.textContent = "Extension error — try reloading";

@@ -4,7 +4,7 @@
  * Each pattern is a system prompt that takes content as input and
  * returns structured markdown sections.
  *
- * Users can add custom patterns in ~/.markstash/patterns/<name>.md
+ * Users can add custom patterns in ~/.nomfeed/patterns/<name>.md
  */
 
 import { existsSync, readFileSync, readdirSync } from "fs";

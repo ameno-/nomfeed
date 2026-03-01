@@ -2,12 +2,12 @@
  * MCP Server — Model Context Protocol over stdio.
  *
  * Tools:
- *   markstash_add     — Save URL, file, or note
- *   markstash_list    — List saved items
- *   markstash_read    — Read markdown content
- *   markstash_search  — Full-text search
- *   markstash_delete  — Remove item
- *   markstash_status  — Stats
+ *   nomfeed_add     — Save URL, file, or note
+ *   nomfeed_list    — List saved items
+ *   nomfeed_read    — Read markdown content
+ *   nomfeed_search  — Full-text search
+ *   nomfeed_delete  — Remove item
+ *   nomfeed_status  — Stats
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -18,14 +18,14 @@ import { urlToMarkdown, fileToMarkdown, noteToMarkdown } from "./convert";
 
 export async function startMcp() {
   const server = new McpServer({
-    name: "markstash",
+    name: "nomfeed",
     version: "1.0.0",
   });
 
-  // ── markstash_add ────────────────────────────────────────────────────────
+  // ── nomfeed_add ────────────────────────────────────────────────────────
 
   server.tool(
-    "markstash_add",
+    "nomfeed_add",
     "Save a URL, file, or note as markdown. URLs are fetched and converted. Files are converted via markitdown. Notes are saved as-is.",
     {
       url: z.string().optional().describe("URL to fetch and convert to markdown"),
@@ -78,10 +78,10 @@ export async function startMcp() {
     }
   );
 
-  // ── markstash_list ───────────────────────────────────────────────────────
+  // ── nomfeed_list ───────────────────────────────────────────────────────
 
   server.tool(
-    "markstash_list",
+    "nomfeed_list",
     "List saved items. Optionally filter by query, tag, or type.",
     {
       query: z.string().optional().describe("Filter by title/source substring"),
@@ -100,10 +100,10 @@ export async function startMcp() {
     }
   );
 
-  // ── markstash_read ───────────────────────────────────────────────────────
+  // ── nomfeed_read ───────────────────────────────────────────────────────
 
   server.tool(
-    "markstash_read",
+    "nomfeed_read",
     "Read the full markdown content of a saved item.",
     {
       id: z.string().describe("Item ID"),
@@ -124,10 +124,10 @@ export async function startMcp() {
     }
   );
 
-  // ── markstash_search ─────────────────────────────────────────────────────
+  // ── nomfeed_search ─────────────────────────────────────────────────────
 
   server.tool(
-    "markstash_search",
+    "nomfeed_search",
     "Full-text search across all saved markdown content.",
     {
       query: z.string().describe("Search query"),
@@ -144,10 +144,10 @@ export async function startMcp() {
     }
   );
 
-  // ── markstash_delete ─────────────────────────────────────────────────────
+  // ── nomfeed_delete ─────────────────────────────────────────────────────
 
   server.tool(
-    "markstash_delete",
+    "nomfeed_delete",
     "Delete a saved item by ID.",
     {
       id: z.string().describe("Item ID to delete"),
@@ -160,11 +160,11 @@ export async function startMcp() {
     }
   );
 
-  // ── markstash_status ─────────────────────────────────────────────────────
+  // ── nomfeed_status ─────────────────────────────────────────────────────
 
   server.tool(
-    "markstash_status",
-    "Show MarkStash stats: item count and data directory.",
+    "nomfeed_status",
+    "Show NomFeed stats: item count and data directory.",
     {},
     async () => {
       return {

@@ -1,7 +1,7 @@
 /**
- * Store — flat-file storage for MarkStash items.
+ * Store — flat-file storage for NomFeed items.
  *
- * ~/.markstash/
+ * ~/.nomfeed/
  *   items.json   — metadata index (array of Item)
  *   content/     — markdown files named {id}.md
  */
@@ -25,7 +25,7 @@ export interface Item {
 
 // ── Paths ──────────────────────────────────────────────────────────────────
 
-const DATA_DIR = process.env.MARKSTASH_DIR || join(process.env.HOME || "~", ".markstash");
+const DATA_DIR = process.env.NOMFEED_DIR || join(process.env.HOME || "~", ".nomfeed");
 const INDEX_PATH = join(DATA_DIR, "items.json");
 const CONTENT_DIR = join(DATA_DIR, "content");
 
