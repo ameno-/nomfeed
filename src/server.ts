@@ -73,23 +73,29 @@ export async function startServer(port: number) {
             strategy: result.strategy,
           });
 
-          // Run extraction if requested (saved separately)
-          let extracted = false;
+          // Run extraction if requested (async — don't block the response)
+          let extracting = false;
           if (body.extract && isConfigured()) {
+            extracting = true;
             const patternNames = Array.isArray(body.patterns) && body.patterns.length
               ? body.patterns
               : DEFAULT_EXTRACT_PATTERNS;
+            const md = result.markdown;
+            const id = item.id;
 
-            try {
-              const extraction = await extract(result.markdown, patternNames);
-              saveExtraction(item.id, extraction.composed, patternNames);
-              extracted = true;
-            } catch {
-              // Extraction failed — item saved without it
-            }
+            // Fire and forget — extraction runs in background
+            (async () => {
+              try {
+                const extraction = await extract(md, patternNames);
+                saveExtraction(id, extraction.composed, patternNames);
+                console.log(`  ✓ Extraction complete for ${id} (${extraction.totalTokens} tokens)`);
+              } catch (e: any) {
+                console.error(`  ✗ Extraction failed for ${id}: ${e.message}`);
+              }
+            })();
           }
 
-          return json({ ok: true, data: { ...item, extracted } }, 200, corsHeaders);
+          return json({ ok: true, data: { ...item, extracting } }, 200, corsHeaders);
         }
 
         // ── GET /patterns ────────────────────────────────────────────────

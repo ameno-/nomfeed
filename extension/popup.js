@@ -145,14 +145,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (response && response.ok) {
           const id = response.data?.id || "ok";
-          const extracted = response.data?.extracted;
-          statusEl.textContent = extracted
-            ? "\u{1F37D}\uFE0F Nommed + extracted! (" + id + ")"
+          const extracting = response.data?.extracting;
+          statusEl.textContent = extracting
+            ? "\u{1F37D}\uFE0F Nommed! Extracting in background... (" + id + ")"
             : "\u{1F37D}\uFE0F Nommed! (" + id + ")";
           statusEl.className = "status success";
 
           // Show CLI command(s)
-          showCliCommand(id, extracted);
+          showCliCommand(id, extracting);
 
           // Remember extraction preferences
           chrome.storage.local.set({
