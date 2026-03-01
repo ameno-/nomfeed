@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NomFeed — Nom the web. Feed your agents.</title>
   <meta name="description" content="Local-first CLI that turns any URL, YouTube video, or file into clean markdown for AI coding agents. No database, no Docker, just .md files.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
@@ -18,7 +19,13 @@
       color: hsl(40 6% 16%);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
     }
+
+    ::selection { background: hsl(100 12% 63% / 0.4); }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+    .mono { font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', Consolas, monospace; }
 
     :root {
       --bg: hsl(40 20% 96%);
@@ -27,79 +34,40 @@
       --muted: hsl(40 8% 45%);
       --sage: hsl(100 12% 63%);
       --sage-dark: hsl(100 12% 50%);
+      --sage-light: hsl(100 12% 75%);
       --terracotta: hsl(28 30% 65%);
       --border: hsl(35 15% 88%);
       --border-hover: hsl(35 15% 80%);
-      --sage-accent: hsl(100 12% 50%);
-      --orange: hsl(28 30% 65%); /* terracotta, warm accent */
     }
-
-    ::selection { background: hsl(100 12% 63% / 0.4); }
-    a { color: inherit; text-decoration: none; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
-    .mono { font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', Consolas, monospace; }
 
     /* ── Nav ── */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-      background: hsla(40, 20%, 96%, 0.9);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-    }
-    nav .inner {
-      display: flex; align-items: center; justify-content: space-between;
-      height: 56px;
-    }
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 50; background: hsla(40,20%,96%,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+    nav .inner { display: flex; align-items: center; justify-content: space-between; height: 56px; }
     nav .logo { display: flex; align-items: center; gap: 0.5rem; font-weight: 500; font-size: 1.05rem; }
-    nav .logo-icon {
-      width: 28px; height: 28px; border-radius: 6px;
-      background: hsl(100 12% 63% / 0.2); color: var(--sage-accent);
-      display: flex; align-items: center; justify-content: center; font-size: 14px;
-    }
+    nav .logo-icon { width: 28px; height: 28px; border-radius: 6px; background: hsl(100 12% 63% / 0.2); display: flex; align-items: center; justify-content: center; font-size: 14px; }
     nav .links { display: flex; gap: 2rem; align-items: center; }
     nav .links a { font-size: 0.9rem; color: var(--muted); transition: color 0.2s; }
     nav .links a:hover { color: var(--fg); }
-    .btn {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      padding: 0.6rem 1.25rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500;
-      border: none; cursor: pointer; transition: all 0.2s;
-    }
-    .btn-primary { background: var(--sage); color: var(--fg); }
+    .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: var(--sage); color: var(--fg); box-shadow: 0 1px 2px hsl(40 6% 16% / 0.08); }
     .btn-primary:hover { background: hsl(100 12% 55%); box-shadow: 0 2px 8px hsl(100 12% 63% / 0.3); }
     .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--fg); }
     .btn-ghost:hover { background: var(--card); border-color: var(--border-hover); }
 
     /* ── Hero ── */
-    .hero {
-      min-height: 100vh; display: flex; align-items: center; padding-top: 56px;
-      background: radial-gradient(ellipse at 30% 20%, hsl(100 12% 63% / 0.12) 0%, transparent 50%),
-                  radial-gradient(ellipse at 70% 80%, hsl(28 30% 65% / 0.08) 0%, transparent 50%);
-    }
+    .hero { min-height: 100vh; display: flex; align-items: center; padding-top: 56px; background: radial-gradient(ellipse at 30% 20%, hsl(100 12% 63% / 0.12) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, hsl(28 30% 65% / 0.08) 0%, transparent 50%); }
     .hero .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
     .hero h1 { font-size: 3rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 1.25rem; }
     .hero h1 .accent { color: var(--sage-dark); }
     .hero .sub { font-size: 1.125rem; color: var(--muted); max-width: 440px; margin-bottom: 2rem; }
-    .badge {
-      display: inline-flex; align-items: center; gap: 0.375rem;
-      padding: 0.375rem 0.875rem; background: hsl(40 20% 92%);
-      border: 1px solid var(--border); border-radius: 20px;
-      font-size: 0.875rem; color: var(--muted); margin-bottom: 1.5rem;
-    }
+    .badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.875rem; background: hsl(40 20% 92%); border: 1px solid var(--border); border-radius: 20px; font-size: 0.875rem; color: var(--muted); margin-bottom: 1.5rem; }
     .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); }
-    .install-cmd {
-      display: flex; align-items: center; gap: 0.75rem;
-      padding: 0.875rem 1rem; background: hsl(40 12% 92%);
-      border: 1px solid var(--border); border-radius: 10px;
-      margin-bottom: 1.5rem;
-    }
+    .install-cmd { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem; background: hsl(40 12% 92%); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 1.5rem; }
     .install-cmd .dollar { color: var(--sage-dark); }
     .install-cmd code { flex: 1; font-size: 0.8rem; color: var(--muted); }
-    .install-cmd button {
-      background: none; border: none; cursor: pointer; padding: 4px;
-      color: var(--muted); transition: color 0.2s;
-    }
+    .install-cmd button { background: none; border: none; cursor: pointer; padding: 4px; color: var(--muted); transition: color 0.2s; }
     .install-cmd button:hover { color: var(--fg); }
-    .hero .ctas { display: flex; gap: 0.75rem; margin-bottom: 2rem; }
+    .hero .ctas { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; }
     .hero-waitlist { margin-bottom: 1.5rem; max-width: 440px; }
     .hero-waitlist .waitlist-form { margin-bottom: 0; }
     .hero-waitlist .waitlist-form input { font-size: 0.85rem; padding: 0.65rem 0.875rem; }
@@ -109,134 +77,101 @@
     .hero .stat-label { font-size: 0.8rem; color: var(--muted); }
 
     /* Terminal */
-    .terminal {
-      background: hsl(40 12% 92%); border: 1px solid hsl(35 15% 85%);
-      border-radius: 16px; overflow: hidden;
-      box-shadow: 0 4px 6px hsl(40 6% 16% / 0.03), 0 12px 32px hsl(40 6% 16% / 0.08);
-    }
-    .terminal-header {
-      background: hsl(40 15% 90%); border-bottom: 1px solid hsl(35 15% 85%);
-      padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between;
-    }
+    .terminal { background: hsl(40 12% 92%); border: 1px solid hsl(35 15% 85%); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px hsl(40 6% 16% / 0.03), 0 12px 32px hsl(40 6% 16% / 0.08); }
+    .terminal-header { background: hsl(40 15% 90%); border-bottom: 1px solid hsl(35 15% 85%); padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; }
     .terminal-dots { display: flex; gap: 6px; }
     .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
-    .terminal-body { padding: 1.25rem; font-size: 0.8rem; line-height: 1.8; min-height: 340px; }
+    .terminal-body { padding: 1.25rem; font-size: 0.8rem; line-height: 1.8; }
+    .terminal-body .line { opacity: 0; animation: fadeInLine 0.15s ease forwards; }
     .terminal-body .prompt { color: var(--sage-dark); }
     .terminal-body .output { color: var(--muted); }
     .terminal-body .success { color: hsl(100 20% 45%); }
-    .terminal-float {
-      position: absolute; bottom: -12px; right: -8px;
-      padding: 0.5rem 1rem; background: var(--card); border: 1px solid var(--border);
-      border-radius: 20px; font-size: 0.8rem; color: var(--muted);
-      box-shadow: 0 2px 8px hsl(40 6% 16% / 0.08);
-    }
+    .terminal-float { position: absolute; bottom: -12px; right: -8px; padding: 0.5rem 1rem; background: var(--card); border: 1px solid var(--border); border-radius: 20px; font-size: 0.8rem; color: var(--muted); box-shadow: 0 2px 8px hsl(40 6% 16% / 0.08); }
+    @keyframes fadeInLine { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
     /* ── Section shared ── */
     section { padding: 5rem 0; }
     .section-header { max-width: 540px; margin-bottom: 3rem; }
+    .section-header.center { margin-left: auto; margin-right: auto; text-align: center; }
     .section-header h2 { font-size: 2rem; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 0.75rem; }
     .section-header h2 .accent { color: var(--sage-dark); }
     .section-header p { font-size: 1.05rem; color: var(--muted); }
-    .divider {
-      height: 1px; max-width: 800px; margin: 0 auto;
-      background: linear-gradient(90deg, transparent, var(--border), transparent);
-    }
+    .divider { height: 1px; max-width: 800px; margin: 0 auto; background: linear-gradient(90deg, transparent, var(--border), transparent); }
 
-    /* ── Features ── */
-    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
-    .feature-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.5rem;
-      transition: all 0.3s; cursor: default;
-    }
-    .feature-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px hsl(40 6% 16% / 0.08); }
-    .feature-icon {
-      width: 44px; height: 44px; border-radius: 10px;
-      background: hsl(40 20% 92%); color: var(--sage-dark);
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 1rem; font-size: 1.25rem;
-    }
-    .feature-card h3 { font-size: 0.95rem; font-weight: 500; margin-bottom: 0.5rem; }
-    .feature-card p { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.75rem; }
-    .feature-cmd {
-      padding: 0.5rem 0.75rem; background: hsl(40 12% 92%);
-      border: 1px solid var(--border); border-radius: 8px;
-      font-size: 0.75rem; color: var(--muted);
-    }
-    .feature-cmd .dollar { color: var(--sage-dark); }
+    /* ── Get Started (combined install + integrations) ── */
+    .get-started-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; }
+    .install-steps { display: flex; flex-direction: column; gap: 0.75rem; }
+    .install-step { display: flex; gap: 0.75rem; align-items: flex-start; padding: 1rem 1.25rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; transition: all 0.2s; }
+    .install-step:hover { box-shadow: 0 4px 12px hsl(40 6% 16% / 0.06); }
+    .step-num { width: 28px; height: 28px; border-radius: 50%; background: hsl(100 12% 63% / 0.15); color: var(--sage-dark); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+    .step-body h3 { font-size: 0.85rem; font-weight: 500; margin-bottom: 0.25rem; }
+    .step-body .cmd { font-size: 0.75rem; color: var(--muted); padding: 0.375rem 0.625rem; background: hsl(40 12% 92%); border: 1px solid var(--border); border-radius: 6px; display: inline-block; margin-top: 0.25rem; }
+    .step-body .cmd .dollar { color: var(--sage-dark); }
+
+    /* Integrations orbit */
+    .integrations { display: flex; flex-direction: column; align-items: center; }
+    .orbit-container { position: relative; width: 320px; height: 320px; }
+    .orbit-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; border-radius: 50%; background: var(--sage); display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 4px 16px hsl(100 12% 63% / 0.3); z-index: 2; }
+    .orbit-ring { position: absolute; top: 50%; left: 50%; width: 280px; height: 280px; margin: -140px 0 0 -140px; border: 1px dashed hsl(35 15% 85%); border-radius: 50%; animation: spin 45s linear infinite; }
+    .orbit-item { position: absolute; width: 52px; height: 52px; border-radius: 12px; background: var(--card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; box-shadow: 0 2px 8px hsl(40 6% 16% / 0.06); animation: counterspin 45s linear infinite; transition: transform 0.3s, box-shadow 0.3s; }
+    .orbit-item:hover { transform: scale(1.15); box-shadow: 0 4px 16px hsl(40 6% 16% / 0.12); }
+    .orbit-item:nth-child(2) { top: -26px; left: 50%; margin-left: -26px; }
+    .orbit-item:nth-child(3) { top: 50%; right: -26px; margin-top: -26px; }
+    .orbit-item:nth-child(4) { bottom: -26px; left: 50%; margin-left: -26px; }
+    .orbit-item:nth-child(5) { top: 50%; left: -26px; margin-top: -26px; }
+    .orbit-item:nth-child(6) { top: 10%; right: 5%; }
+    .orbit-item:nth-child(7) { bottom: 10%; right: 5%; }
+    .orbit-item:nth-child(8) { bottom: 10%; left: 5%; }
+    .orbit-item:nth-child(9) { top: 10%; left: 5%; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes counterspin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+    .integrations-label { margin-top: 1.5rem; font-size: 0.85rem; color: var(--muted); text-align: center; }
+
+    /* ── Terminal Demo ── */
+    .demo-grid { display: grid; grid-template-columns: 200px 1fr; gap: 1.5rem; }
+    .demo-tabs { display: flex; flex-direction: column; gap: 0.375rem; }
+    .demo-tab { display: flex; align-items: center; gap: 0.625rem; padding: 0.625rem 0.875rem; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 0.85rem; font-weight: 450; cursor: pointer; transition: all 0.2s; text-align: left; width: 100%; }
+    .demo-tab:hover { background: var(--card); border-color: var(--border); color: var(--fg); }
+    .demo-tab.active { background: hsl(100 12% 63% / 0.12); border-color: hsl(100 12% 63% / 0.25); color: hsl(100 12% 40%); }
+    .demo-tab .ico { font-size: 1rem; width: 20px; text-align: center; }
 
     /* ── Extraction ── */
     .patterns-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-    .pattern-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.25rem;
-    }
+    .pattern-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
     .pattern-card h3 { font-size: 0.9rem; font-weight: 500; margin-bottom: 0.375rem; }
     .pattern-card p { font-size: 0.8rem; color: var(--muted); }
-    .pattern-card .tag {
-      display: inline-block; margin-top: 0.5rem;
-      padding: 0.2rem 0.5rem; background: hsl(100 12% 63% / 0.15);
-      border-radius: 4px; font-size: 0.7rem; color: var(--sage-dark);
-    }
+    .pattern-card .tag { display: inline-block; margin-top: 0.5rem; padding: 0.2rem 0.5rem; background: hsl(100 12% 63% / 0.15); border-radius: 4px; font-size: 0.7rem; color: var(--sage-dark); }
 
     /* ── Roadmap ── */
     .roadmap-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
-    .roadmap-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.5rem;
-    }
+    .roadmap-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
     .roadmap-card h3 { font-size: 1rem; font-weight: 500; margin-bottom: 0.25rem; }
     .roadmap-card .phase { font-size: 0.75rem; color: var(--sage-dark); margin-bottom: 0.75rem; }
     .roadmap-card ul { list-style: none; }
-    .roadmap-card li {
-      font-size: 0.85rem; color: var(--muted); padding: 0.375rem 0;
-      display: flex; align-items: flex-start; gap: 0.5rem;
-    }
+    .roadmap-card li { font-size: 0.85rem; color: var(--muted); padding: 0.375rem 0; display: flex; align-items: flex-start; gap: 0.5rem; }
     .roadmap-card li .check { color: var(--sage-dark); flex-shrink: 0; }
     .roadmap-card li .planned { color: var(--border-hover); flex-shrink: 0; }
 
     /* ── Waitlist ── */
-    .waitlist-section {
-      background: radial-gradient(ellipse at 50% 50%, hsl(100 12% 63% / 0.08) 0%, transparent 60%);
-    }
-    .waitlist-box {
-      max-width: 560px; margin: 0 auto; text-align: center;
-    }
+    .waitlist-section { background: radial-gradient(ellipse at 50% 50%, hsl(100 12% 63% / 0.08) 0%, transparent 60%); }
+    .waitlist-box { max-width: 560px; margin: 0 auto; text-align: center; }
     .waitlist-box h2 { font-size: 2rem; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 0.75rem; }
     .waitlist-box h2 .accent { color: var(--sage-dark); }
     .waitlist-box .sub { font-size: 1rem; color: var(--muted); margin-bottom: 2rem; }
-    .waitlist-form {
-      display: flex; gap: 0.5rem; margin-bottom: 1rem;
-    }
-    .waitlist-form input {
-      flex: 1; padding: 0.75rem 1rem; border: 1px solid var(--border);
-      border-radius: 8px; background: white; font-size: 0.9rem;
-      font-family: inherit; outline: none; transition: border-color 0.2s;
-    }
+    .waitlist-form { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .waitlist-form input { flex: 1; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; background: white; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
     .waitlist-form input:focus { border-color: var(--sage); }
-    .waitlist-form button {
-      padding: 0.75rem 1.5rem; border-radius: 8px;
-      background: var(--sage); color: var(--fg); border: none;
-      font-size: 0.9rem; font-weight: 500; cursor: pointer;
-      transition: all 0.2s; white-space: nowrap;
-    }
+    .waitlist-form button { padding: 0.75rem 1.5rem; border-radius: 8px; background: var(--sage); color: var(--fg); border: none; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
     .waitlist-form button:hover { background: hsl(100 12% 55%); box-shadow: 0 2px 8px hsl(100 12% 63% / 0.3); }
     .waitlist-note { font-size: 0.8rem; color: var(--muted); }
-    .waitlist-success {
-      display: none; padding: 1rem; background: hsl(100 12% 63% / 0.15);
-      border-radius: 8px; font-size: 0.9rem; color: var(--sage-dark);
-    }
+    .waitlist-success { display: none; padding: 1rem; background: hsl(100 12% 63% / 0.15); border-radius: 8px; font-size: 0.9rem; color: var(--sage-dark); }
     .waitlist-success.show { display: block; }
 
     /* ── Footer ── */
     footer { border-top: 1px solid var(--border); padding: 3rem 0; }
     footer .inner { display: flex; align-items: center; justify-content: space-between; }
     footer .left { display: flex; align-items: center; gap: 0.5rem; font-weight: 500; }
-    footer .left .logo-icon {
-      width: 24px; height: 24px; border-radius: 4px;
-      background: hsl(100 12% 63% / 0.2); color: var(--sage-accent);
-      display: flex; align-items: center; justify-content: center; font-size: 11px;
-    }
+    footer .left .logo-icon { width: 24px; height: 24px; border-radius: 4px; background: hsl(100 12% 63% / 0.2); display: flex; align-items: center; justify-content: center; font-size: 11px; }
     footer .copy { font-size: 0.8rem; color: var(--muted); }
     footer .right { display: flex; gap: 1.5rem; }
     footer .right a { font-size: 0.85rem; color: var(--muted); transition: color 0.2s; }
@@ -244,18 +179,17 @@
 
     /* ── Responsive ── */
     @media (max-width: 768px) {
-      .hero .grid { grid-template-columns: 1fr; gap: 2rem; }
+      .hero .grid, .get-started-grid { grid-template-columns: 1fr; gap: 2rem; }
       .hero h1 { font-size: 2.25rem; }
-      .features-grid { grid-template-columns: 1fr; }
-      .patterns-grid { grid-template-columns: 1fr; }
-      .roadmap-cols { grid-template-columns: 1fr; }
+      .patterns-grid, .roadmap-cols { grid-template-columns: 1fr; }
+      .demo-grid { grid-template-columns: 1fr; }
+      .demo-tabs { flex-direction: row; flex-wrap: wrap; }
+      .orbit-container { width: 260px; height: 260px; }
+      .orbit-ring { width: 230px; height: 230px; margin: -115px 0 0 -115px; }
       .hero .stats { gap: 1.5rem; }
       nav .links { display: none; }
       .waitlist-form { flex-direction: column; }
       footer .inner { flex-direction: column; gap: 1rem; text-align: center; }
-    }
-    @media (min-width: 769px) and (max-width: 1024px) {
-      .features-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -264,19 +198,16 @@
 <!-- Nav -->
 <nav>
   <div class="container inner">
-    <a href="#" class="logo">
-      <span class="logo-icon">🍴</span>
-      NomFeed
-    </a>
+    <a href="#" class="logo"><span class="logo-icon">🍴</span> NomFeed</a>
     <div class="links">
-      <a href="#features">Features</a>
+      <a href="#demo">Demo</a>
       <a href="#patterns">Extraction</a>
       <a href="#roadmap">Roadmap</a>
       <a href="#waitlist">Early Access</a>
     </div>
     <div style="display:flex;gap:0.5rem;">
       <a href="https://github.com/ameno-/nomfeed" target="_blank" class="btn btn-ghost" style="font-size:0.8rem;">GitHub</a>
-      <a href="#install" class="btn btn-primary" style="font-size:0.8rem;">Install</a>
+      <a href="#get-started" class="btn btn-primary" style="font-size:0.8rem;">Install</a>
     </div>
   </div>
 </nav>
@@ -297,19 +228,16 @@
         </div>
 
         <div class="ctas">
-          <a href="#install" class="btn btn-primary">Get Started →</a>
+          <a href="#get-started" class="btn btn-primary">Get Started →</a>
           <a href="#waitlist" class="btn btn-ghost">Join Early Access</a>
         </div>
 
-        <!-- Inline waitlist in hero -->
         <div class="hero-waitlist">
           <form class="waitlist-form" onsubmit="handleWaitlist(event)" style="margin-bottom:0;">
             <input type="email" name="email" placeholder="you@example.com" required>
             <button type="submit">🍴 Join Waitlist</button>
           </form>
-          <div class="waitlist-success" id="hero-waitlist-success">
-            ✓ You're on the list!
-          </div>
+          <div class="waitlist-success" id="hero-waitlist-success">✓ You're on the list!</div>
         </div>
 
         <div class="stats">
@@ -331,32 +259,7 @@
             <span class="mono" style="font-size:0.75rem;color:var(--muted);">nomfeed</span>
             <div style="width:40px;"></div>
           </div>
-          <div class="terminal-body mono" id="terminal">
-            <div class="prompt">$ nomfeed add https://youtube.com/watch?v=abc --extract</div>
-            <div class="output">  Fetching https://youtube.com/watch?v=abc...</div>
-            <div class="output">  Fetched via yt-dlp</div>
-            <div class="output">  Extracting with patterns: extract_wisdom, video_chapters...</div>
-            <div class="output">    Running extract_wisdom...</div>
-            <div class="output">    Running video_chapters...</div>
-            <div class="success">    ✓ extract_wisdom done</div>
-            <div class="success">    ✓ video_chapters done</div>
-            <div class="output">  Extraction complete (14,832 tokens)</div>
-            <div class="output">{</div>
-            <div class="output">  "id": "AMxTn2tS5_",</div>
-            <div class="output">  "title": "How to Build AI Agents",</div>
-            <div class="output">  "strategy": "yt-dlp",</div>
-            <div class="success">  "extracted": true ✦</div>
-            <div class="output">}</div>
-            <div></div>
-            <div class="prompt">$ nomfeed read AMxTn2tS5_ --extract</div>
-            <div class="output"># SUMMARY</div>
-            <div class="output">Expert discusses agent architecture patterns...</div>
-            <div class="output"># IDEAS</div>
-            <div class="output">- Verification asymmetry enables AI to solve...</div>
-            <div class="output">- Environment readiness creates multiplicative...</div>
-            <div class="output"># QUOTES</div>
-            <div class="output">- "The limiter is not the capability of the...</div>
-          </div>
+          <div class="terminal-body mono" id="hero-terminal" style="min-height:340px;"></div>
         </div>
         <div class="terminal-float">No database. No Docker. Just .md files.</div>
       </div>
@@ -366,31 +269,61 @@
 
 <div class="divider"></div>
 
-<!-- Install (first thing after hero) -->
-<section id="install">
+<!-- Get Started: Install + Integrations orbit -->
+<section id="get-started">
   <div class="container">
     <div class="section-header">
       <h2>Up and running in <span class="accent">60 seconds</span></h2>
-      <p>No database. No Docker. No accounts. Just clone and go.</p>
+      <p>Clone, install, and start feeding your agents. Works with everything you already use.</p>
     </div>
 
-    <div style="max-width:640px;">
-      <div class="feature-card" style="margin-bottom:1rem;padding:1.25rem;">
-        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">1. Clone & Install</h3>
-        <div class="feature-cmd mono" style="margin-top:0.5rem;"><span class="dollar">$</span> git clone https://github.com/ameno-/nomfeed && cd nomfeed && bun install && bun link</div>
+    <div class="get-started-grid">
+      <div class="install-steps">
+        <div class="install-step">
+          <span class="step-num">1</span>
+          <div class="step-body">
+            <h3>Clone & Install</h3>
+            <div class="cmd mono"><span class="dollar">$</span> git clone github.com/ameno-/nomfeed && bun install && bun link</div>
+          </div>
+        </div>
+        <div class="install-step">
+          <span class="step-num">2</span>
+          <div class="step-body">
+            <h3>Save anything</h3>
+            <div class="cmd mono"><span class="dollar">$</span> nomfeed add https://any-url.com</div>
+          </div>
+        </div>
+        <div class="install-step">
+          <span class="step-num">3</span>
+          <div class="step-body">
+            <h3>Search your library</h3>
+            <div class="cmd mono"><span class="dollar">$</span> nomfeed search "transformers"</div>
+          </div>
+        </div>
+        <div class="install-step">
+          <span class="step-num">+</span>
+          <div class="step-body">
+            <h3>Optional: LLM Extraction</h3>
+            <div class="cmd mono"><span class="dollar">$</span> export OPENROUTER_API_KEY=your-key</div>
+          </div>
+        </div>
       </div>
-      <div class="feature-card" style="margin-bottom:1rem;padding:1.25rem;">
-        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">2. Save something</h3>
-        <div class="feature-cmd mono" style="margin-top:0.5rem;"><span class="dollar">$</span> nomfeed add https://any-url.com</div>
-      </div>
-      <div class="feature-card" style="margin-bottom:1rem;padding:1.25rem;">
-        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">3. Search your library</h3>
-        <div class="feature-cmd mono" style="margin-top:0.5rem;"><span class="dollar">$</span> nomfeed search "query"</div>
-      </div>
-      <div class="feature-card" style="padding:1.25rem;">
-        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">Optional: LLM Extraction</h3>
-        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">Bring your own OpenRouter key. Access any model.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> export OPENROUTER_API_KEY=your-key</div>
+
+      <div class="integrations">
+        <div class="orbit-container">
+          <div class="orbit-center">🍴</div>
+          <div class="orbit-ring">
+            <div class="orbit-item" title="YouTube">🎬</div>
+            <div class="orbit-item" title="Chrome">🌐</div>
+            <div class="orbit-item" title="PDF">📄</div>
+            <div class="orbit-item" title="Claude / MCP">🤖</div>
+            <div class="orbit-item" title="Markdown">📝</div>
+            <div class="orbit-item" title="OpenRouter">⚡</div>
+            <div class="orbit-item" title="Word / Excel">📊</div>
+            <div class="orbit-item" title="Code">💻</div>
+          </div>
+        </div>
+        <p class="integrations-label">URLs · YouTube · PDFs · DOCX · XLSX · Code · Images · MCP · Chrome Extension</p>
       </div>
     </div>
   </div>
@@ -398,76 +331,37 @@
 
 <div class="divider"></div>
 
-<!-- Features -->
-<section id="features">
+<!-- Interactive Terminal Demo -->
+<section id="demo">
   <div class="container">
     <div class="section-header">
-      <h2>Everything you need to <span class="accent">feed your agents</span></h2>
-      <p>One CLI that handles URLs, videos, files, and notes — with optional LLM extraction.</p>
+      <h2>See it in <span class="accent">action</span></h2>
+      <p>A powerful CLI for managing your AI-ready content library.</p>
     </div>
 
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🔗</div>
-        <h3>URLs → Markdown</h3>
-        <p>3-strategy cascade: Cloudflare text/markdown → Jina Reader (handles JS SPAs) → Readability fallback.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> nomfeed add &lt;url&gt;</div>
+    <div class="demo-grid">
+      <div class="demo-tabs" id="demo-tabs">
+        <button class="demo-tab active" data-demo="add"><span class="ico">🔗</span> Add URL</button>
+        <button class="demo-tab" data-demo="youtube"><span class="ico">🎬</span> YouTube</button>
+        <button class="demo-tab" data-demo="search"><span class="ico">🔍</span> Search</button>
+        <button class="demo-tab" data-demo="extract"><span class="ico">⚡</span> Extract</button>
+        <button class="demo-tab" data-demo="read"><span class="ico">📖</span> Read</button>
+        <button class="demo-tab" data-demo="list"><span class="ico">📋</span> List</button>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">🎬</div>
-        <h3>YouTube Transcripts</h3>
-        <p>Full timestamped transcript via yt-dlp. Optional LLM extraction for structured insights.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> nomfeed add &lt;yt-url&gt; --extract</div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">📄</div>
-        <h3>File Conversion</h3>
-        <p>PDF, DOCX, XLSX, images, code files → markdown via Microsoft's markitdown.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> nomfeed add ./report.pdf</div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">📝</div>
-        <h3>Quick Notes</h3>
-        <p>Save text notes as markdown files instantly. Tag and search them later.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> nomfeed note "idea..."</div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🔍</div>
-        <h3>Full-Text Search</h3>
-        <p>Search across all saved content — titles, bodies, extractions. Fast local search.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> nomfeed search "query"</div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <h3>LLM Extraction</h3>
-        <p>Fabric-inspired patterns extract wisdom, claims, references — not just a summary.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> nomfeed extract &lt;id&gt;</div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🤖</div>
-        <h3>MCP Server</h3>
-        <p>Built-in MCP for Claude Desktop, Cursor, and other AI agents to search your library.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> nomfeed mcp</div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🌐</div>
-        <h3>Chrome Extension</h3>
-        <p>One-click save from your browser. Right-click any page or use the popup. Optional extraction.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> nomfeed serve</div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">📡</div>
-        <h3>HTTP API</h3>
-        <p>RESTful API on localhost for integrations, automations, and external tools.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> nomfeed serve --port 24242</div>
+      <div>
+        <div class="terminal">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span style="background:hsl(28 30% 65% / 0.6)"></span>
+              <span style="background:hsl(40 10% 75%)"></span>
+              <span style="background:hsl(100 12% 63% / 0.6)"></span>
+            </div>
+            <span class="mono" style="font-size:0.75rem;color:var(--muted);">nomfeed CLI</span>
+            <div style="width:40px;"></div>
+          </div>
+          <div class="terminal-body mono" id="demo-terminal" style="min-height:340px;overflow:hidden;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -480,47 +374,24 @@
   <div class="container">
     <div class="section-header">
       <h2>Not a summary. <span class="accent">Structured extraction.</span></h2>
-      <p>Fabric-inspired LLM patterns that pull out ideas, insights, quotes, claims, and references. Each pattern = one focused API call. You pick which ones to run.</p>
+      <p>Fabric-inspired LLM patterns that pull out ideas, insights, quotes, claims, and references. Each pattern = one focused API call.</p>
     </div>
 
     <div class="patterns-grid">
-      <div class="pattern-card">
-        <h3>🧠 Extract Wisdom</h3>
-        <p>Ideas, insights, quotes, habits, facts, references, and recommendations in structured sections.</p>
-        <span class="tag">Default</span>
-      </div>
-      <div class="pattern-card">
-        <h3>📑 Video Chapters</h3>
-        <p>Timestamped chapter outline from any transcript. HH:MM:SS Topic Name format.</p>
-        <span class="tag">Default</span>
-      </div>
-      <div class="pattern-card">
-        <h3>⚖️ Analyze Claims</h3>
-        <p>Truth claims with support/refutation evidence and A–F ratings. Logical fallacy detection.</p>
-        <span class="tag">Optional</span>
-      </div>
-      <div class="pattern-card">
-        <h3>📚 Extract References</h3>
-        <p>Books, papers, tools, people, and projects mentioned. Categorized with context.</p>
-        <span class="tag">Optional</span>
-      </div>
-      <div class="pattern-card">
-        <h3>📋 Summarize</h3>
-        <p>One-sentence summary + 10 main points + 5 takeaways. Clean and concise.</p>
-        <span class="tag">Optional</span>
-      </div>
-      <div class="pattern-card">
-        <h3>⭐ Rate Content</h3>
-        <p>Quality scores: surprise, novelty, insight, practical value, wisdom. 0-10 per dimension.</p>
-        <span class="tag">Optional</span>
-      </div>
+      <div class="pattern-card"><h3>🧠 Extract Wisdom</h3><p>Ideas, insights, quotes, habits, facts, references, and recommendations in structured sections.</p><span class="tag">Default</span></div>
+      <div class="pattern-card"><h3>📑 Video Chapters</h3><p>Timestamped chapter outline from any transcript. HH:MM:SS Topic Name format.</p><span class="tag">Default</span></div>
+      <div class="pattern-card"><h3>⚖️ Analyze Claims</h3><p>Truth claims with support/refutation evidence and A–F ratings. Logical fallacy detection.</p><span class="tag">Optional</span></div>
+      <div class="pattern-card"><h3>📚 Extract References</h3><p>Books, papers, tools, people, and projects mentioned. Categorized with context.</p><span class="tag">Optional</span></div>
+      <div class="pattern-card"><h3>📋 Summarize</h3><p>One-sentence summary + 10 main points + 5 takeaways. Clean and concise.</p><span class="tag">Optional</span></div>
+      <div class="pattern-card"><h3>⭐ Rate Content</h3><p>Quality scores: surprise, novelty, insight, practical value, wisdom. 0–10 per dimension.</p><span class="tag">Optional</span></div>
     </div>
-
     <div style="text-align:center;margin-top:1.5rem;font-size:0.85rem;color:var(--muted);">
       + Add your own patterns in <code class="mono" style="font-size:0.8rem;">~/.nomfeed/patterns/&lt;name&gt;/system.md</code>
     </div>
   </div>
 </section>
+
+<div class="divider"></div>
 
 <!-- Roadmap -->
 <section id="roadmap">
@@ -529,11 +400,9 @@
       <h2>What's <span class="accent">shipped</span> and what's next</h2>
       <p>Transparency over hype. Here's where NomFeed is today and where it's going.</p>
     </div>
-
     <div class="roadmap-cols">
       <div class="roadmap-card">
-        <h3>Now</h3>
-        <div class="phase">Shipped & working</div>
+        <h3>Now</h3><div class="phase">Shipped & working</div>
         <ul>
           <li><span class="check">✓</span> URL → markdown (3-strategy)</li>
           <li><span class="check">✓</span> YouTube transcript extraction</li>
@@ -546,10 +415,8 @@
           <li><span class="check">✓</span> BYO API key (OpenRouter)</li>
         </ul>
       </div>
-
       <div class="roadmap-card">
-        <h3>Next</h3>
-        <div class="phase">In progress / planned</div>
+        <h3>Next</h3><div class="phase">In progress / planned</div>
         <ul>
           <li><span class="planned">○</span> npm publish (one-command install)</li>
           <li><span class="planned">○</span> Obsidian vault integration</li>
@@ -559,10 +426,8 @@
           <li><span class="planned">○</span> More extraction patterns</li>
         </ul>
       </div>
-
       <div class="roadmap-card">
-        <h3>Later</h3>
-        <div class="phase">If there's demand</div>
+        <h3>Later</h3><div class="phase">If there's demand</div>
         <ul>
           <li><span class="planned">○</span> Cloud sync across devices</li>
           <li><span class="planned">○</span> Shared libraries (teams)</li>
@@ -577,23 +442,18 @@
 
 <div class="divider"></div>
 
-<!-- Waitlist / Early Access -->
+<!-- Waitlist -->
 <section id="waitlist" class="waitlist-section">
   <div class="container">
     <div class="waitlist-box">
       <div class="badge" style="margin:0 auto 1.5rem;"><span class="dot"></span> Early Access</div>
       <h2>Get early access to <span class="accent">what's next</span></h2>
       <p class="sub">Join the waitlist for cloud sync, team features, and managed extraction. We'll also share updates, tips, and new patterns.</p>
-
       <form class="waitlist-form" onsubmit="handleWaitlist(event)">
         <input type="email" name="email" placeholder="you@example.com" required>
         <button type="submit">🍴 Join Waitlist</button>
       </form>
-
-      <div class="waitlist-success" id="waitlist-success">
-        ✓ You're on the list! We'll reach out when early access is ready.
-      </div>
-
+      <div class="waitlist-success">✓ You're on the list! We'll reach out when early access is ready.</div>
       <p class="waitlist-note">No spam. Just product updates and early access invites.</p>
     </div>
   </div>
@@ -603,10 +463,7 @@
 <footer>
   <div class="container inner">
     <div>
-      <div class="left">
-        <span class="logo-icon">🍴</span>
-        NomFeed
-      </div>
+      <div class="left"><span class="logo-icon">🍴</span> NomFeed</div>
       <div class="copy" style="margin-top:0.25rem;">© 2026 NomFeed. Open source under MIT License.</div>
     </div>
     <div class="right">
@@ -619,33 +476,175 @@
 </footer>
 
 <script>
+// ── Copy install command ──
 function copyCmd(btn) {
   navigator.clipboard.writeText('git clone https://github.com/ameno-/nomfeed && cd nomfeed && bun install && bun link');
   btn.textContent = '✓';
   setTimeout(() => btn.textContent = '📋', 2000);
 }
 
+// ── Waitlist ──
 function handleWaitlist(e) {
   e.preventDefault();
-  const form = e.target;
-  const email = form.querySelector('input[name="email"]').value;
-
-  // Store in localStorage + show success on all waitlist forms
+  const email = e.target.querySelector('input[name="email"]').value;
   const existing = JSON.parse(localStorage.getItem('nomfeed-waitlist') || '[]');
   existing.push({ email, ts: new Date().toISOString() });
   localStorage.setItem('nomfeed-waitlist', JSON.stringify(existing));
-
-  // Hide all waitlist forms, show all success messages
   document.querySelectorAll('.waitlist-form').forEach(f => f.style.display = 'none');
   document.querySelectorAll('.waitlist-success').forEach(s => s.classList.add('show'));
-
-  // TODO: Replace with actual API call
-  // fetch('https://api.nomfeed.dev/waitlist', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ email }),
-  // });
 }
+
+// ── Hero terminal typewriter ──
+const heroLines = [
+  { type: 'prompt', text: '$ nomfeed add https://youtube.com/watch?v=abc --extract' },
+  { type: 'output', text: '  Fetching https://youtube.com/watch?v=abc...' },
+  { type: 'success', text: '  Fetched via yt-dlp' },
+  { type: 'output', text: '  Extracting with patterns: extract_wisdom, video_chapters...' },
+  { type: 'output', text: '    Running extract_wisdom...' },
+  { type: 'output', text: '    Running video_chapters...' },
+  { type: 'success', text: '    ✓ extract_wisdom done' },
+  { type: 'success', text: '    ✓ video_chapters done' },
+  { type: 'output', text: '  Extraction complete (14,832 tokens)' },
+  { type: 'output', text: '{' },
+  { type: 'output', text: '  "id": "AMxTn2tS5_",' },
+  { type: 'output', text: '  "title": "How to Build AI Agents",' },
+  { type: 'output', text: '  "strategy": "yt-dlp",' },
+  { type: 'success', text: '  "extracted": true ✦' },
+  { type: 'output', text: '}' },
+];
+
+function typeTerminal(container, lines, delay = 120) {
+  container.innerHTML = '';
+  let i = 0;
+  function next() {
+    if (i >= lines.length) return;
+    const line = lines[i];
+    const div = document.createElement('div');
+    div.className = `line ${line.type}`;
+    div.textContent = line.text;
+    div.style.animationDelay = '0s';
+    container.appendChild(div);
+    i++;
+    setTimeout(next, line.type === 'prompt' ? delay * 3 : delay);
+  }
+  next();
+}
+
+// Start hero animation
+setTimeout(() => typeTerminal(document.getElementById('hero-terminal'), heroLines), 500);
+
+// ── Demo terminal ──
+const demos = {
+  add: {
+    lines: [
+      { type: 'prompt', text: '$ nomfeed add https://react.dev/blog/server-components' },
+      { type: 'output', text: '  Fetching https://react.dev/blog/server-components...' },
+      { type: 'success', text: '  Fetched via cloudflare' },
+      { type: 'output', text: '{' },
+      { type: 'output', text: '  "id": "rsc_8kF2p1",' },
+      { type: 'output', text: '  "title": "React Server Components",' },
+      { type: 'output', text: '  "type": "url",' },
+      { type: 'output', text: '  "strategy": "cloudflare"' },
+      { type: 'output', text: '}' },
+      { type: 'success', text: '' },
+      { type: 'success', text: '✓ Saved to ~/.nomfeed/content/rsc_8kF2p1.md' },
+    ]
+  },
+  youtube: {
+    lines: [
+      { type: 'prompt', text: '$ nomfeed add https://youtube.com/watch?v=ShuJ --extract' },
+      { type: 'output', text: '  Fetching https://youtube.com/watch?v=ShuJ...' },
+      { type: 'success', text: '  Fetched via yt-dlp' },
+      { type: 'output', text: '  Extracting with patterns: extract_wisdom, video_chapters...' },
+      { type: 'success', text: '    ✓ extract_wisdom done' },
+      { type: 'success', text: '    ✓ video_chapters done' },
+      { type: 'output', text: '  Extraction complete (17,634 tokens)' },
+      { type: 'output', text: '{' },
+      { type: 'output', text: '  "id": "AMxTn2tS5_",' },
+      { type: 'output', text: '  "title": "Making Codebases Agent Ready",' },
+      { type: 'success', text: '  "extracted": true ✦' },
+      { type: 'output', text: '}' },
+    ]
+  },
+  search: {
+    lines: [
+      { type: 'prompt', text: '$ nomfeed search "agent architecture"' },
+      { type: 'output', text: '' },
+      { type: 'output', text: '  AMxTn2tS5_  Making Codebases Agent Ready' },
+      { type: 'output', text: '             ...agent readiness requires eight pillars...' },
+      { type: 'output', text: '' },
+      { type: 'output', text: '  spPYFs4-29  How OpenClaw was built' },
+      { type: 'output', text: '             ...agent architecture patterns for production...' },
+      { type: 'output', text: '' },
+      { type: 'output', text: '  rsc_8kF2p1  React Server Components' },
+      { type: 'output', text: '             ...component architecture for agents...' },
+      { type: 'output', text: '' },
+      { type: 'success', text: '3 result(s)' },
+    ]
+  },
+  extract: {
+    lines: [
+      { type: 'prompt', text: '$ nomfeed extract AMxTn2tS5_ --patterns summarize' },
+      { type: 'output', text: '  Extracting with patterns: summarize...' },
+      { type: 'output', text: '    Running summarize...' },
+      { type: 'success', text: '    ✓ summarize done' },
+      { type: 'output', text: '  Extraction saved (622 tokens)' },
+      { type: 'success', text: '  Read with: nomfeed read AMxTn2tS5_ --extract' },
+      { type: 'output', text: '' },
+      { type: 'output', text: '# ONE SENTENCE SUMMARY' },
+      { type: 'output', text: 'Environment validation readiness determines whether' },
+      { type: 'output', text: 'coding agents reliably ship production code at scale.' },
+      { type: 'output', text: '' },
+      { type: 'output', text: '# MAIN POINTS' },
+      { type: 'output', text: '1. Software development agents are the most advanced...' },
+      { type: 'output', text: '2. Organizations need rigorous automated validation...' },
+    ]
+  },
+  read: {
+    lines: [
+      { type: 'prompt', text: '$ nomfeed read AMxTn2tS5_ --extract' },
+      { type: 'output', text: '# SUMMARY' },
+      { type: 'output', text: 'Eno Reyes discusses making codebases agent-ready' },
+      { type: 'output', text: 'through automated validation and environment readiness.' },
+      { type: 'output', text: '' },
+      { type: 'output', text: '# IDEAS' },
+      { type: 'output', text: '- Verification asymmetry enables AI to solve problems' },
+      { type: 'output', text: '  much harder than specification alone would allow.' },
+      { type: 'output', text: '- Environment readiness creates multiplicative gains' },
+      { type: 'output', text: '  across all AI tools.' },
+      { type: 'output', text: '' },
+      { type: 'output', text: '# QUOTES' },
+      { type: 'output', text: '- "The limiter is not the capability of the coding' },
+      { type: 'output', text: '   agent. The limit is your validation criteria."' },
+    ]
+  },
+  list: {
+    lines: [
+      { type: 'prompt', text: '$ nomfeed list' },
+      { type: 'output', text: '  AMxTn2tS5_  url   3/1/2026  Making Codebases Agent Ready (yt-dlp) ✦' },
+      { type: 'output', text: '  spPYFs4-29  url   3/1/2026  How OpenClaw was built (yt-dlp) ✦' },
+      { type: 'output', text: '  rsc_8kF2p1  url   3/1/2026  React Server Components (cloudflare)' },
+      { type: 'output', text: '  Eu9Zsh27Ov  url   3/1/2026  example.com (jina) ✦' },
+      { type: 'output', text: '  w-7xvY6zoC  url   2/28/2026 Don\'t Buy a Mac Mini (yt-dlp)' },
+      { type: 'output', text: '' },
+      { type: 'success', text: '5 item(s)' },
+      { type: 'output', text: '' },
+      { type: 'output', text: '  ✦ = extraction available (--extract to read)' },
+    ]
+  },
+};
+
+document.getElementById('demo-tabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.demo-tab');
+  if (!tab) return;
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  const demoKey = tab.dataset.demo;
+  typeTerminal(document.getElementById('demo-terminal'), demos[demoKey].lines, 80);
+});
+
+// Auto-start first demo
+setTimeout(() => typeTerminal(document.getElementById('demo-terminal'), demos.add.lines, 80), 1000);
 </script>
 
 </body>
