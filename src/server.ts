@@ -38,7 +38,7 @@ export async function startServer(port: number) {
             return json({ ok: false, error: "Provide url, file, or note" }, 400, corsHeaders);
           }
 
-          let result: { title: string; markdown: string };
+          let result: { title: string; markdown: string; strategy?: string };
           let type: "url" | "file" | "note";
           let source: string;
 
@@ -67,6 +67,7 @@ export async function startServer(port: number) {
             title: body.title || result.title,
             markdown: result.markdown,
             tags: body.tags || [],
+            strategy: result.strategy,
           });
 
           return json({ ok: true, data: item }, 200, corsHeaders);

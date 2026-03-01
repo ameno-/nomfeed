@@ -20,6 +20,7 @@ export interface Item {
   tags: string[];
   savedAt: string;         // ISO 8601
   file: string;            // filename in content/
+  strategy?: string;       // how the content was fetched (cloudflare, jina, readability)
 }
 
 // ── Paths ──────────────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ export function addItem(opts: {
   title: string;
   markdown: string;
   tags?: string[];
+  strategy?: string;
 }): Item {
   const items = loadIndex();
   const id = nanoid(10);
@@ -86,6 +88,7 @@ export function addItem(opts: {
     tags: opts.tags || [],
     savedAt: new Date().toISOString(),
     file: filename,
+    ...(opts.strategy ? { strategy: opts.strategy } : {}),
   };
 
   items.push(item);

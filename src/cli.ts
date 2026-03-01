@@ -79,7 +79,7 @@ async function main() {
       const tags = flag("tags")?.split(",").map(t => t.trim()) || [];
 
       try {
-        let result: { title: string; markdown: string };
+        let result: { title: string; markdown: string; strategy?: string };
         let type: "url" | "file";
 
         if (target.startsWith("http://") || target.startsWith("https://")) {
@@ -96,6 +96,7 @@ async function main() {
           title: title || result.title,
           markdown: result.markdown,
           tags,
+          strategy: result.strategy,
         });
 
         out(item);
