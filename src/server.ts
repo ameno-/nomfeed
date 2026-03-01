@@ -37,7 +37,6 @@ export async function startServer(port: number) {
         // ── POST /add ────────────────────────────────────────────────────
         if (path === "/add" && req.method === "POST") {
           const body = await req.json() as any;
-          console.log(`  POST /add:`, JSON.stringify({ url: body.url?.slice(0, 60), extract: body.extract, patterns: body.patterns }));
 
           if (!body.url && !body.file && !body.note) {
             return json({ ok: false, error: "Provide url, file, or note" }, 400, corsHeaders);
@@ -76,31 +75,24 @@ export async function startServer(port: number) {
 
           // Run extraction if requested (async — don't block the response)
           let extracting = false;
-          console.log(`  extract requested: ${!!body.extract}, llm configured: ${isConfigured()}`);
-          if (body.extract) {
-            if (!isConfigured()) {
-              console.error(`  ✗ Extraction requested but OPENROUTER_API_KEY not set`);
-            } else {
-              extracting = true;
-              const patternNames = Array.isArray(body.patterns) && body.patterns.length
-                ? body.patterns
-                : DEFAULT_EXTRACT_PATTERNS;
-              const md = result.markdown;
-              const id = item.id;
-              console.log(`  Starting extraction for ${id} with patterns: ${patternNames.join(", ")}`);
+          if (body.extract && isConfigured()) {
+            extracting = true;
+            const patternNames = Array.isArray(body.patterns) && body.patterns.length
+              ? body.patterns
+              : DEFAULT_EXTRACT_PATTERNS;
+            const md = result.markdown;
+            const id = item.id;
 
-              // Fire and forget — extraction runs in background
-              (async () => {
-                try {
-                  const extraction = await extract(md, patternNames);
-                  saveExtraction(id, extraction.composed, patternNames);
-                  console.log(`  ✓ Extraction complete for ${id} (${extraction.totalTokens} tokens)`);
-                } catch (e: any) {
-                  console.error(`  ✗ Extraction failed for ${id}: ${e.message}`);
-                  console.error(`  Stack: ${e.stack}`);
-                }
-              })();
-            }
+            // Fire and forget — extraction runs in background
+            (async () => {
+              try {
+                const extraction = await extract(md, patternNames);
+                saveExtraction(id, extraction.composed, patternNames);
+                console.log(`  ✓ Extraction complete for ${id} (${extraction.totalTokens} tokens)`);
+              } catch (e: any) {
+                console.error(`  ✗ Extraction failed for ${id}: ${e.message}`);
+              }
+            })();
           }
 
           return json({ ok: true, data: { ...item, extracting } }, 200, corsHeaders);

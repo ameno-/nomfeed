@@ -78,13 +78,6 @@ async function handleSaveCurrentTab(message) {
   const serverUrl = await getServerUrl();
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  console.log("[NomFeed] handleSaveCurrentTab", {
-    serverUrl,
-    tabUrl: tab?.url?.slice(0, 60),
-    extract: message.extract,
-    patterns: message.patterns,
-  });
-
   if (!tab?.url) return { ok: false, error: "No active tab" };
 
   const payload = {
@@ -101,19 +94,14 @@ async function handleSaveCurrentTab(message) {
     }
   }
 
-  console.log("[NomFeed] sending payload", JSON.stringify(payload));
-
   try {
     const resp = await fetch(`${serverUrl}/add`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const data = await resp.json();
-    console.log("[NomFeed] response", JSON.stringify(data));
-    return data;
+    return await resp.json();
   } catch (e) {
-    console.error("[NomFeed] fetch failed", e);
     return {
       ok: false,
       error: `Cannot connect to nomfeed server at ${serverUrl}.\nRun: nomfeed serve`,
