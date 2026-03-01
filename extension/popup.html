@@ -18,10 +18,22 @@
       padding: 16px;
     }
 
-    h1 {
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .header img {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+    }
+
+    .header h1 {
       font-size: 16px;
       font-weight: 600;
-      margin-bottom: 12px;
       color: #fff;
     }
 
@@ -56,25 +68,27 @@
       font-size: 13px;
       outline: none;
       font-family: inherit;
+      transition: border-color 0.15s;
     }
 
-    input:focus { border-color: #555; }
+    input:focus { border-color: #f97316; }
 
     button#save {
       width: 100%;
       padding: 10px;
       border: none;
       border-radius: 6px;
-      background: #2563eb;
+      background: #f97316;
       color: white;
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
       margin-top: 4px;
+      transition: background 0.15s;
     }
 
-    button#save:hover { background: #1d4ed8; }
-    button#save:active { background: #1e40af; }
+    button#save:hover { background: #ea580c; }
+    button#save:active { background: #c2410c; }
     button#save:disabled { background: #333; color: #666; cursor: not-allowed; }
 
     .status {
@@ -99,7 +113,7 @@
       cursor: pointer;
     }
 
-    .footer a:hover { color: #888; }
+    .footer a:hover { color: #f97316; }
 
     .settings {
       display: none;
@@ -126,7 +140,10 @@
   </style>
 </head>
 <body>
-  <h1>&#x1F4D1; NomFeed</h1>
+  <div class="header">
+    <img src="icons/icon48.png" alt="NomFeed">
+    <h1>NomFeed</h1>
+  </div>
 
   <div class="url-display" id="url">Loading...</div>
 
@@ -140,7 +157,7 @@
     <input type="text" id="tags" placeholder="comma, separated, tags">
   </div>
 
-  <button id="save">Save to NomFeed</button>
+  <button id="save">&#x1F374; Nom this page</button>
 
   <div class="status" id="status"></div>
 

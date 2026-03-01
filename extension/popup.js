@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Save button
   saveBtn.addEventListener("click", () => {
     saveBtn.disabled = true;
-    saveBtn.textContent = "Saving...";
+    saveBtn.textContent = "Nomming...";
     statusEl.textContent = "";
     statusEl.className = "status";
 
@@ -47,19 +47,19 @@ document.addEventListener("DOMContentLoaded", () => {
       { type: "save-current-tab", title: titleEl.value, tags },
       (response) => {
         saveBtn.disabled = false;
-        saveBtn.textContent = "Save to NomFeed";
+        saveBtn.textContent = "\u{1F374} Nom this page";
 
         if (chrome.runtime.lastError) {
-          statusEl.textContent = "Extension error — try reloading";
+          statusEl.textContent = "Extension error \u2014 try reloading";
           statusEl.className = "status error";
           return;
         }
 
         if (response && response.ok) {
-          statusEl.textContent = "\u2713 Saved (" + (response.data?.id || "ok") + ")";
+          statusEl.textContent = "\u{1F37D}\uFE0F Nommed! (" + (response.data?.id || "ok") + ")";
           statusEl.className = "status success";
         } else {
-          statusEl.textContent = (response && response.error) || "Failed to save";
+          statusEl.textContent = (response && response.error) || "Failed to nom";
           statusEl.className = "status error";
         }
       }
