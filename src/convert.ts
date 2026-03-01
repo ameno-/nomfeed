@@ -16,10 +16,17 @@ import { Readability } from "@mozilla/readability";
 import TurndownService from "turndown";
 import { parseHTML } from "linkedom";
 import { join } from "path";
+import { isYouTubeUrl, extractYouTube } from "./youtube";
 
 // ── URL → Markdown ─────────────────────────────────────────────────────────
 
 export async function urlToMarkdown(url: string): Promise<{ title: string; markdown: string; strategy: string }> {
+  // YouTube gets special handling via yt-dlp
+  if (isYouTubeUrl(url)) {
+    const yt = await extractYouTube(url);
+    return { title: yt.title, markdown: yt.markdown, strategy: "yt-dlp" };
+  }
+
   // Strategy 1: Cloudflare Markdown for Agents
   const cfResult = await tryCloudflareMarkdown(url);
   if (cfResult) return { ...cfResult, strategy: "cloudflare" };

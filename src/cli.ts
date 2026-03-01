@@ -3,19 +3,25 @@
  * MarkStash CLI — dead-simple bookmark/file → markdown manager.
  *
  * Usage:
- *   markstash add <url-or-file>   Save URL or file as markdown
- *   markstash note <text>         Save a quick note
- *   markstash list [--query q]    List saved items
- *   markstash read <id>           Output markdown content
- *   markstash search <query>      Full-text search
- *   markstash delete <id>         Remove item
- *   markstash serve [--port N]    Start HTTP server (for extension)
- *   markstash mcp                 Start MCP server (stdio)
- *   markstash status              Show stats
+ *   markstash add <url-or-file>       Save URL or file as markdown
+ *   markstash add <yt-url> --extract  Save + run extraction patterns via LLM
+ *   markstash note <text>             Save a quick note
+ *   markstash list [--query q]        List saved items
+ *   markstash read <id>               Output markdown content
+ *   markstash search <query>          Full-text search
+ *   markstash extract <id>            Run extraction patterns on existing item
+ *   markstash patterns                List available extraction patterns
+ *   markstash delete <id>             Remove item
+ *   markstash serve [--port N]        Start HTTP server (for extension)
+ *   markstash mcp                     Start MCP server (stdio)
+ *   markstash status                  Show stats
  */
 
 import { addItem, listItems, readContent, searchContent, deleteItem, getItem, itemCount, getDataDir } from "./store";
 import { urlToMarkdown, fileToMarkdown, noteToMarkdown } from "./convert";
+import { extract } from "./extract";
+import { listPatterns, DEFAULT_EXTRACT_PATTERNS } from "./patterns";
+import { isConfigured, getConfig } from "./llm";
 import { startServer } from "./server";
 import { startMcp } from "./mcp";
 
@@ -37,6 +43,10 @@ function stripFlags(a: string[]): string[] {
   const result: string[] = [];
   for (let i = 0; i < a.length; i++) {
     if (a[i].startsWith("--")) {
+      // Boolean flags (no value): --json, --extract
+      if (["--json", "--extract"].includes(a[i])) {
+        continue;
+      }
       i++; // skip the flag value too
     } else {
       result.push(a[i]);
@@ -68,15 +78,22 @@ function err(msg: string, code = 1) {
   process.exit(code);
 }
 
+function progress(msg: string) {
+  if (!json) process.stderr.write(`  ${msg}\n`);
+}
+
 async function main() {
   switch (command) {
     // ── add ──────────────────────────────────────────────────────────────
     case "add": {
       const target = args[1];
-      if (!target) err("Usage: markstash add <url-or-file>");
+      if (!target) err("Usage: markstash add <url-or-file> [--extract] [--patterns p1,p2]");
 
       const title = flag("title");
       const tags = flag("tags")?.split(",").map(t => t.trim()) || [];
+      const doExtract = hasFlag("extract");
+      const patternNames = flag("patterns")?.split(",").map(p => p.trim());
+      const model = flag("model");
 
       try {
         let result: { title: string; markdown: string; strategy?: string };
@@ -84,10 +101,35 @@ async function main() {
 
         if (target.startsWith("http://") || target.startsWith("https://")) {
           type = "url";
+          progress(`Fetching ${target}...`);
           result = await urlToMarkdown(target);
+          progress(`Fetched via ${result.strategy}`);
         } else {
           type = "file";
+          progress(`Converting ${target}...`);
           result = await fileToMarkdown(target);
+        }
+
+        // Run extraction if requested
+        if (doExtract) {
+          const patterns = patternNames || DEFAULT_EXTRACT_PATTERNS;
+          progress(`Extracting with patterns: ${patterns.join(", ")}...`);
+
+          // Use the raw content (strip frontmatter if present) for extraction
+          const extractContent = result.markdown;
+
+          const extraction = await extract(extractContent, patterns, {
+            model,
+            onProgress: (name, status) => {
+              if (status === "start") progress(`  Running ${name}...`);
+              else if (status === "done") progress(`  ✓ ${name} done`);
+              else progress(`  ✗ ${name} failed`);
+            },
+          });
+
+          // Compose: original content + extraction results
+          result.markdown = result.markdown + "\n\n---\n\n# Extraction\n\n" + extraction.composed;
+          progress(`Extraction complete (${extraction.totalTokens} tokens)`);
         }
 
         const item = addItem({
@@ -102,6 +144,76 @@ async function main() {
         out(item);
       } catch (e: any) {
         err(e.message);
+      }
+      break;
+    }
+
+    // ── extract ──────────────────────────────────────────────────────────
+    case "extract": {
+      const id = args[1];
+      if (!id) err("Usage: markstash extract <id> [--patterns p1,p2] [--model m]");
+
+      const content = readContent(id);
+      if (!content) err(`Not found: ${id}`, 1);
+
+      const patternNames = flag("patterns")?.split(",").map(p => p.trim());
+      const model = flag("model");
+      const patterns = patternNames || DEFAULT_EXTRACT_PATTERNS;
+
+      try {
+        progress(`Extracting with patterns: ${patterns.join(", ")}...`);
+
+        const extraction = await extract(content!, patterns, {
+          model,
+          onProgress: (name, status) => {
+            if (status === "start") progress(`  Running ${name}...`);
+            else if (status === "done") progress(`  ✓ ${name} done`);
+            else progress(`  ✗ ${name} failed`);
+          },
+        });
+
+        progress(`Extraction complete (${extraction.totalTokens} tokens)`);
+
+        if (json) {
+          out({
+            id,
+            patterns: extraction.results.map(r => ({
+              pattern: r.pattern,
+              model: r.model,
+              tokens: r.usage?.total_tokens,
+              error: r.error,
+            })),
+            totalTokens: extraction.totalTokens,
+            content: extraction.composed,
+          });
+        } else {
+          console.log(extraction.composed);
+        }
+      } catch (e: any) {
+        err(e.message);
+      }
+      break;
+    }
+
+    // ── patterns ─────────────────────────────────────────────────────────
+    case "patterns": {
+      const patterns = listPatterns();
+      const defaults = new Set(DEFAULT_EXTRACT_PATTERNS);
+
+      if (!json) {
+        console.log("Available extraction patterns:\n");
+        for (const p of patterns) {
+          const def = defaults.has(p.name) ? " (default)" : "";
+          console.log(`  ${p.name.padEnd(20)} ${p.description}${def}`);
+        }
+        console.log(`\n${patterns.length} pattern(s). Defaults: ${DEFAULT_EXTRACT_PATTERNS.join(", ")}`);
+        console.log(`\nCustom patterns: ~/.markstash/patterns/<name>/system.md`);
+      } else {
+        out(patterns.map(p => ({
+          name: p.name,
+          description: p.description,
+          default: defaults.has(p.name),
+        })));
       }
       break;
     }
@@ -145,7 +257,8 @@ async function main() {
         for (const item of items) {
           const date = new Date(item.savedAt).toLocaleDateString();
           const tags = item.tags.length ? ` [${item.tags.join(", ")}]` : "";
-          console.log(`  ${item.id}  ${item.type.padEnd(4)}  ${date}  ${item.title}${tags}`);
+          const strat = item.strategy ? ` (${item.strategy})` : "";
+          console.log(`  ${item.id}  ${item.type.padEnd(4)}  ${date}  ${item.title}${tags}${strat}`);
         }
         console.log(`\n${items.length} item(s)`);
       } else {
@@ -229,7 +342,12 @@ async function main() {
     case "status": {
       const count = itemCount();
       const dir = getDataDir();
-      out({ items: count, dataDir: dir });
+      const llmConfig = getConfig();
+      out({
+        items: count,
+        dataDir: dir,
+        llm: llmConfig,
+      });
       break;
     }
 
@@ -242,31 +360,44 @@ async function main() {
 markstash — save anything as markdown
 
 Commands:
-  add <url-or-file>   Save URL or file as markdown
-  note <text>         Save a quick note
-  list                List saved items
-  read <id>           Output markdown content  
-  search <query>      Full-text search
-  delete <id>         Remove item
-  serve [--port N]    Start HTTP server (default: 24242)
-  mcp                 Start MCP server (stdio)
-  status              Show stats
+  add <url-or-file>     Save URL or file as markdown
+  note <text>           Save a quick note
+  list                  List saved items
+  read <id>             Output markdown content
+  search <query>        Full-text search
+  extract <id>          Run extraction patterns on existing item
+  patterns              List available extraction patterns
+  delete <id>           Remove item
+  serve [--port N]      Start HTTP server (default: 24242)
+  mcp                   Start MCP server (stdio)
+  status                Show stats
 
-Flags:
-  --json              Machine-readable JSON output
-  --title <t>         Override title (add/note)
-  --tags <a,b>        Comma-separated tags (add/note)
-  --query <q>         Filter by title/source (list)
-  --tag <t>           Filter by tag (list)
-  --type <url|file>   Filter by type (list)
-  --limit <n>         Limit results
+Add Flags:
+  --extract             Run LLM extraction patterns after saving
+  --patterns <a,b>      Specific patterns to run (default: extract_wisdom,video_chapters)
+  --model <m>           Override LLM model (OpenRouter model ID)
+  --title <t>           Override title
+  --tags <a,b>          Comma-separated tags
+
+General Flags:
+  --json                Machine-readable JSON output
+  --query <q>           Filter by title/source (list)
+  --tag <t>             Filter by tag (list)
+  --limit <n>           Limit results
+
+Environment:
+  OPENROUTER_API_KEY    Required for --extract (get at openrouter.ai/keys)
+  MARKSTASH_MODEL       Override default model (default: anthropic/claude-sonnet-4.5)
+  MARKSTASH_DIR         Override data directory (default: ~/.markstash)
 
 Examples:
   markstash add https://example.com/article
+  markstash add https://youtube.com/watch?v=xyz --extract
+  markstash add https://youtube.com/watch?v=xyz --extract --patterns wisdom,chapters,claims
   markstash add ./report.pdf --tags work,q4
-  markstash note "Remember to review the API docs"
+  markstash extract abc123 --patterns summarize,rate_content
+  markstash patterns
   markstash search "machine learning" --json
-  markstash read abc123 | pbcopy
 `);
       break;
     }
