@@ -76,24 +76,31 @@ export async function startServer(port: number) {
 
           // Run extraction if requested (async — don't block the response)
           let extracting = false;
-          if (body.extract && isConfigured()) {
-            extracting = true;
-            const patternNames = Array.isArray(body.patterns) && body.patterns.length
-              ? body.patterns
-              : DEFAULT_EXTRACT_PATTERNS;
-            const md = result.markdown;
-            const id = item.id;
+          console.log(`  extract requested: ${!!body.extract}, llm configured: ${isConfigured()}`);
+          if (body.extract) {
+            if (!isConfigured()) {
+              console.error(`  ✗ Extraction requested but OPENROUTER_API_KEY not set`);
+            } else {
+              extracting = true;
+              const patternNames = Array.isArray(body.patterns) && body.patterns.length
+                ? body.patterns
+                : DEFAULT_EXTRACT_PATTERNS;
+              const md = result.markdown;
+              const id = item.id;
+              console.log(`  Starting extraction for ${id} with patterns: ${patternNames.join(", ")}`);
 
-            // Fire and forget — extraction runs in background
-            (async () => {
-              try {
-                const extraction = await extract(md, patternNames);
-                saveExtraction(id, extraction.composed, patternNames);
-                console.log(`  ✓ Extraction complete for ${id} (${extraction.totalTokens} tokens)`);
-              } catch (e: any) {
-                console.error(`  ✗ Extraction failed for ${id}: ${e.message}`);
-              }
-            })();
+              // Fire and forget — extraction runs in background
+              (async () => {
+                try {
+                  const extraction = await extract(md, patternNames);
+                  saveExtraction(id, extraction.composed, patternNames);
+                  console.log(`  ✓ Extraction complete for ${id} (${extraction.totalTokens} tokens)`);
+                } catch (e: any) {
+                  console.error(`  ✗ Extraction failed for ${id}: ${e.message}`);
+                  console.error(`  Stack: ${e.stack}`);
+                }
+              })();
+            }
           }
 
           return json({ ok: true, data: { ...item, extracting } }, 200, corsHeaders);
