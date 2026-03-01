@@ -37,6 +37,7 @@ export async function startServer(port: number) {
         // ── POST /add ────────────────────────────────────────────────────
         if (path === "/add" && req.method === "POST") {
           const body = await req.json() as any;
+          console.log(`  POST /add:`, JSON.stringify({ url: body.url?.slice(0, 60), extract: body.extract, patterns: body.patterns }));
 
           if (!body.url && !body.file && !body.note) {
             return json({ ok: false, error: "Provide url, file, or note" }, 400, corsHeaders);

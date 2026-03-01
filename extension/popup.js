@@ -106,6 +106,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   extractCheckbox.addEventListener("change", () => {
     patternsDiv.classList.toggle("visible", extractCheckbox.checked);
+    // Try loading patterns if not loaded yet
+    if (extractCheckbox.checked && availablePatterns.length === 0) {
+      loadPatterns();
+    }
   });
 
   // ── Save ───────────────────────────────────────────────────────────────
@@ -122,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .map((t) => t.trim())
       .filter(Boolean);
 
-    const doExtract = extractCheckbox.checked && llmConfigured;
+    const doExtract = extractCheckbox.checked;
     const patterns = doExtract ? [...selectedPatterns] : [];
 
     chrome.runtime.sendMessage(
