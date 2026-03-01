@@ -151,8 +151,8 @@ document.addEventListener("DOMContentLoaded", () => {
             : "\u{1F37D}\uFE0F Nommed! (" + id + ")";
           statusEl.className = "status success";
 
-          // Show CLI command
-          showCliCommand(id);
+          // Show CLI command(s)
+          showCliCommand(id, extracted);
 
           // Remember extraction preferences
           chrome.storage.local.set({
@@ -169,14 +169,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── CLI output ─────────────────────────────────────────────────────────
 
-  function showCliCommand(id) {
-    cliCmdSpan.textContent = "nomfeed read " + id;
+  function showCliCommand(id, extracted) {
+    const commands = ["nomfeed read " + id];
+    if (extracted) {
+      commands.push("nomfeed read " + id + " --extract");
+      commands.push("nomfeed read " + id + " --full");
+    }
+    cliCmdSpan.innerHTML = commands
+      .map((cmd) => '<span class="cli-line">' + cmd + "</span>")
+      .join("");
     cliOutputDiv.classList.add("visible");
     cliOutputDiv.classList.remove("copied");
+
+    // Store for copy — just the first command by default
+    cliOutputDiv.dataset.commands = commands.join("\n");
   }
 
   cliOutputDiv.addEventListener("click", () => {
-    const cmd = cliCmdSpan.textContent;
+    const cmd = cliOutputDiv.dataset.commands || cliCmdSpan.textContent;
     navigator.clipboard.writeText(cmd).then(() => {
       cliOutputDiv.classList.add("copied");
       cliOutputDiv.querySelector(".copy-hint").textContent = "copied!";

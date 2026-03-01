@@ -13,8 +13,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { addItem, listItems, readContent, searchContent, deleteItem, getItem, itemCount, getDataDir } from "./store";
+import { addItem, listItems, readContent, readExtraction, saveExtraction, searchContent, deleteItem, getItem, itemCount, getDataDir } from "./store";
 import { urlToMarkdown, fileToMarkdown, noteToMarkdown } from "./convert";
+import { extract } from "./extract";
+import { listPatterns, DEFAULT_EXTRACT_PATTERNS } from "./patterns";
+import { isConfigured } from "./llm";
 
 export async function startMcp() {
   const server = new McpServer({
@@ -104,23 +107,74 @@ export async function startMcp() {
 
   server.tool(
     "nomfeed_read",
-    "Read the full markdown content of a saved item.",
+    "Read content of a saved item. Use mode='extract' for just the extraction, mode='full' for content + extraction.",
     {
       id: z.string().describe("Item ID"),
+      mode: z.enum(["content", "extract", "full"]).optional().describe("What to read: content (default), extract (extraction only), full (both)"),
     },
-    async ({ id }) => {
+    async ({ id, mode }) => {
       const item = getItem(id);
       if (!item) {
         return { content: [{ type: "text" as const, text: "Error: item not found" }] };
       }
 
+      const m = mode || "content";
+      const mainContent = readContent(id);
+      const extraction = readExtraction(id);
+
+      let text: string;
+      if (m === "extract") {
+        text = extraction || "No extraction available. Use nomfeed_extract to run extraction.";
+      } else if (m === "full") {
+        text = (mainContent || "Content file missing");
+        if (extraction) text += "\n\n---\n\n# Extraction\n\n" + extraction;
+      } else {
+        text = mainContent || "Content file missing";
+      }
+
+      return { content: [{ type: "text" as const, text }] };
+    }
+  );
+
+  // ── nomfeed_extract ────────────────────────────────────────────────────
+
+  server.tool(
+    "nomfeed_extract",
+    "Run LLM extraction patterns on a saved item. Requires OPENROUTER_API_KEY.",
+    {
+      id: z.string().describe("Item ID to extract from"),
+      patterns: z.array(z.string()).optional().describe("Pattern names (default: extract_wisdom, video_chapters)"),
+    },
+    async ({ id, patterns: patternNames }) => {
+      if (!isConfigured()) {
+        return { content: [{ type: "text" as const, text: "Error: OPENROUTER_API_KEY not set" }] };
+      }
+
       const content = readContent(id);
-      return {
-        content: [{
-          type: "text" as const,
-          text: content || "Error: content file missing",
-        }],
-      };
+      if (!content) {
+        return { content: [{ type: "text" as const, text: "Error: item not found" }] };
+      }
+
+      try {
+        const names = patternNames?.length ? patternNames : DEFAULT_EXTRACT_PATTERNS;
+        const extraction = await extract(content, names);
+        saveExtraction(id, extraction.composed, names);
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              ok: true,
+              id,
+              patterns: names,
+              totalTokens: extraction.totalTokens,
+              extraction: extraction.composed,
+            }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Error: ${e.message}` }] };
+      }
     }
   );
 

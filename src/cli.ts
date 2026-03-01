@@ -17,7 +17,7 @@
  *   nomfeed status                  Show stats
  */
 
-import { addItem, listItems, readContent, searchContent, deleteItem, getItem, itemCount, getDataDir } from "./store";
+import { addItem, listItems, readContent, readExtraction, saveExtraction, searchContent, deleteItem, getItem, itemCount, getDataDir } from "./store";
 import { urlToMarkdown, fileToMarkdown, noteToMarkdown } from "./convert";
 import { extract } from "./extract";
 import { listPatterns, DEFAULT_EXTRACT_PATTERNS } from "./patterns";
@@ -43,8 +43,8 @@ function stripFlags(a: string[]): string[] {
   const result: string[] = [];
   for (let i = 0; i < a.length; i++) {
     if (a[i].startsWith("--")) {
-      // Boolean flags (no value): --json, --extract
-      if (["--json", "--extract"].includes(a[i])) {
+      // Boolean flags (no value): --json, --extract, --full
+      if (["--json", "--extract", "--full"].includes(a[i])) {
         continue;
       }
       i++; // skip the flag value too
@@ -110,28 +110,6 @@ async function main() {
           result = await fileToMarkdown(target);
         }
 
-        // Run extraction if requested
-        if (doExtract) {
-          const patterns = patternNames || DEFAULT_EXTRACT_PATTERNS;
-          progress(`Extracting with patterns: ${patterns.join(", ")}...`);
-
-          // Use the raw content (strip frontmatter if present) for extraction
-          const extractContent = result.markdown;
-
-          const extraction = await extract(extractContent, patterns, {
-            model,
-            onProgress: (name, status) => {
-              if (status === "start") progress(`  Running ${name}...`);
-              else if (status === "done") progress(`  ✓ ${name} done`);
-              else progress(`  ✗ ${name} failed`);
-            },
-          });
-
-          // Compose: original content + extraction results
-          result.markdown = result.markdown + "\n\n---\n\n# Extraction\n\n" + extraction.composed;
-          progress(`Extraction complete (${extraction.totalTokens} tokens)`);
-        }
-
         const item = addItem({
           type,
           source: target,
@@ -140,6 +118,26 @@ async function main() {
           tags,
           strategy: result.strategy,
         });
+
+        // Run extraction if requested (saved separately)
+        if (doExtract) {
+          const patterns = patternNames || DEFAULT_EXTRACT_PATTERNS;
+          progress(`Extracting with patterns: ${patterns.join(", ")}...`);
+
+          const extraction = await extract(result.markdown, patterns, {
+            model,
+            onProgress: (name, status) => {
+              if (status === "start") progress(`  Running ${name}...`);
+              else if (status === "done") progress(`  ✓ ${name} done`);
+              else progress(`  ✗ ${name} failed`);
+            },
+          });
+
+          saveExtraction(item.id, extraction.composed, patterns);
+          progress(`Extraction complete (${extraction.totalTokens} tokens)`);
+          item.extracted = true;
+          item.extractionPatterns = patterns;
+        }
 
         out(item);
       } catch (e: any) {
@@ -172,7 +170,10 @@ async function main() {
           },
         });
 
-        progress(`Extraction complete (${extraction.totalTokens} tokens)`);
+        // Save extraction to disk
+        saveExtraction(id, extraction.composed, patterns);
+        progress(`Extraction saved (${extraction.totalTokens} tokens)`);
+        progress(`Read with: nomfeed read ${id} --extract`);
 
         if (json) {
           out({
@@ -258,7 +259,8 @@ async function main() {
           const date = new Date(item.savedAt).toLocaleDateString();
           const tags = item.tags.length ? ` [${item.tags.join(", ")}]` : "";
           const strat = item.strategy ? ` (${item.strategy})` : "";
-          console.log(`  ${item.id}  ${item.type.padEnd(4)}  ${date}  ${item.title}${tags}${strat}`);
+          const ext = item.extracted ? " ✦" : "";
+          console.log(`  ${item.id}  ${item.type.padEnd(4)}  ${date}  ${item.title}${tags}${strat}${ext}`);
         }
         console.log(`\n${items.length} item(s)`);
       } else {
@@ -271,16 +273,37 @@ async function main() {
     case "read":
     case "cat": {
       const id = args[1];
-      if (!id) err("Usage: nomfeed read <id>");
+      if (!id) err("Usage: nomfeed read <id> [--extract] [--full]");
+
+      const item = getItem(id);
+      if (!item) err(`Not found: ${id}`, 1);
+
+      const wantExtract = hasFlag("extract");
+      const wantFull = hasFlag("full");
 
       const content = readContent(id);
-      if (!content) err(`Not found: ${id}`, 1);
+      if (!content) err(`Content file missing for: ${id}`, 1);
+
+      const extraction = readExtraction(id);
 
       if (json) {
-        const item = getItem(id);
-        out({ ...item, content });
+        const data: any = { ...item, content };
+        if (extraction) data.extraction = extraction;
+        out(data);
+      } else if (wantExtract) {
+        if (!extraction) err(`No extraction for ${id}. Run: nomfeed extract ${id}`);
+        console.log(extraction);
+      } else if (wantFull) {
+        console.log(content);
+        if (extraction) {
+          console.log("\n---\n\n# Extraction\n");
+          console.log(extraction);
+        }
       } else {
         console.log(content);
+        if (extraction) {
+          progress(`\nExtraction available. Use --extract or --full to include.`);
+        }
       }
       break;
     }
@@ -363,7 +386,7 @@ Commands:
   add <url-or-file>     Save URL or file as markdown
   note <text>           Save a quick note
   list                  List saved items
-  read <id>             Output markdown content
+  read <id>             Output markdown content (--extract | --full)
   search <query>        Full-text search
   extract <id>          Run extraction patterns on existing item
   patterns              List available extraction patterns
@@ -395,6 +418,8 @@ Examples:
   nomfeed add https://youtube.com/watch?v=xyz --extract
   nomfeed add https://youtube.com/watch?v=xyz --extract --patterns wisdom,chapters,claims
   nomfeed add ./report.pdf --tags work,q4
+  nomfeed read abc123 --extract            # just the extraction
+  nomfeed read abc123 --full               # content + extraction
   nomfeed extract abc123 --patterns summarize,rate_content
   nomfeed patterns
   nomfeed search "machine learning" --json

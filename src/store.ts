@@ -21,6 +21,9 @@ export interface Item {
   savedAt: string;         // ISO 8601
   file: string;            // filename in content/
   strategy?: string;       // how the content was fetched (cloudflare, jina, readability)
+  extracted?: boolean;     // true if extraction has been run
+  extractedAt?: string;    // ISO 8601
+  extractionPatterns?: string[]; // which patterns were run
 }
 
 // ── Paths ──────────────────────────────────────────────────────────────────
@@ -151,6 +154,29 @@ export function searchContent(query: string, limit = 20): Array<Item & { snippet
   return results;
 }
 
+// ── Extraction Storage ─────────────────────────────────────────────────────
+
+export function saveExtraction(id: string, extraction: string, patterns: string[]): boolean {
+  const items = loadIndex();
+  const idx = items.findIndex(i => i.id === id);
+  if (idx === -1) return false;
+
+  const extractionFile = `${id}.extraction.md`;
+  writeFileSync(join(CONTENT_DIR, extractionFile), extraction, "utf-8");
+
+  items[idx].extracted = true;
+  items[idx].extractedAt = new Date().toISOString();
+  items[idx].extractionPatterns = patterns;
+  saveIndex(items);
+  return true;
+}
+
+export function readExtraction(id: string): string | null {
+  const path = join(CONTENT_DIR, `${id}.extraction.md`);
+  if (!existsSync(path)) return null;
+  return readFileSync(path, "utf-8");
+}
+
 export function deleteItem(id: string): boolean {
   const items = loadIndex();
   const idx = items.findIndex(i => i.id === id);
@@ -159,6 +185,10 @@ export function deleteItem(id: string): boolean {
   const item = items[idx];
   const path = join(CONTENT_DIR, item.file);
   if (existsSync(path)) unlinkSync(path);
+
+  // Also remove extraction file if it exists
+  const extractionPath = join(CONTENT_DIR, `${item.id}.extraction.md`);
+  if (existsSync(extractionPath)) unlinkSync(extractionPath);
 
   items.splice(idx, 1);
   saveIndex(items);

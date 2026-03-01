@@ -10,7 +10,7 @@
  * GET  /health          Health check
  */
 
-import { addItem, listItems, readContent, getItem, deleteItem, searchContent, itemCount } from "./store";
+import { addItem, listItems, readContent, readExtraction, saveExtraction, getItem, deleteItem, searchContent, itemCount } from "./store";
 import { urlToMarkdown, fileToMarkdown, noteToMarkdown } from "./convert";
 import { extract } from "./extract";
 import { listPatterns, DEFAULT_EXTRACT_PATTERNS } from "./patterns";
@@ -64,22 +64,6 @@ export async function startServer(port: number) {
             result = noteToMarkdown(body.note, body.title);
           }
 
-          // Run extraction if requested and LLM is configured
-          let extracted = false;
-          if (body.extract && isConfigured()) {
-            const patternNames = Array.isArray(body.patterns) && body.patterns.length
-              ? body.patterns
-              : DEFAULT_EXTRACT_PATTERNS;
-
-            try {
-              const extraction = await extract(result.markdown, patternNames);
-              result.markdown = result.markdown + "\n\n---\n\n# Extraction\n\n" + extraction.composed;
-              extracted = true;
-            } catch {
-              // Extraction failed — save without it
-            }
-          }
-
           const item = addItem({
             type,
             source,
@@ -88,6 +72,22 @@ export async function startServer(port: number) {
             tags: body.tags || [],
             strategy: result.strategy,
           });
+
+          // Run extraction if requested (saved separately)
+          let extracted = false;
+          if (body.extract && isConfigured()) {
+            const patternNames = Array.isArray(body.patterns) && body.patterns.length
+              ? body.patterns
+              : DEFAULT_EXTRACT_PATTERNS;
+
+            try {
+              const extraction = await extract(result.markdown, patternNames);
+              saveExtraction(item.id, extraction.composed, patternNames);
+              extracted = true;
+            } catch {
+              // Extraction failed — item saved without it
+            }
+          }
 
           return json({ ok: true, data: { ...item, extracted } }, 200, corsHeaders);
         }
@@ -123,7 +123,10 @@ export async function startServer(port: number) {
           if (!item) return json({ ok: false, error: "Not found" }, 404, corsHeaders);
 
           const content = readContent(id);
-          return json({ ok: true, data: { ...item, content } }, 200, corsHeaders);
+          const extraction = readExtraction(id);
+          const data: any = { ...item, content };
+          if (extraction) data.extraction = extraction;
+          return json({ ok: true, data }, 200, corsHeaders);
         }
 
         // ── DELETE /items/:id ────────────────────────────────────────────
