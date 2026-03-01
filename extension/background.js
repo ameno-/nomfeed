@@ -1,55 +1,51 @@
 /**
  * MarkStash Chrome Extension — Background Service Worker
- *
- * Handles:
- * - Context menu "Save to MarkStash"
- * - Communication with local markstash server
  */
 
 const DEFAULT_SERVER = "http://localhost:24242";
 
-// Get server URL from storage or use default
 async function getServerUrl() {
-  const result = await chrome.storage.local.get("serverUrl");
-  return result.serverUrl || DEFAULT_SERVER;
+  try {
+    const result = await chrome.storage.local.get("serverUrl");
+    return result.serverUrl || DEFAULT_SERVER;
+  } catch {
+    return DEFAULT_SERVER;
+  }
 }
 
-// Create context menu on install
+// Create context menus on install
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "save-to-markstash",
-    title: "Save to MarkStash",
-    contexts: ["page", "selection", "link"],
-  });
+  // Remove existing menus first to avoid duplicates on update
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: "save-page",
+      title: "Save page to MarkStash",
+      contexts: ["page", "link"],
+    });
 
-  chrome.contextMenus.create({
-    id: "save-selection-to-markstash",
-    title: "Save selection to MarkStash",
-    contexts: ["selection"],
+    chrome.contextMenus.create({
+      id: "save-selection",
+      title: "Save selection to MarkStash",
+      contexts: ["selection"],
+    });
   });
 });
 
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const serverUrl = await getServerUrl();
-
   let payload = {};
 
-  if (info.menuItemId === "save-selection-to-markstash" && info.selectionText) {
+  if (info.menuItemId === "save-selection" && info.selectionText) {
     payload = {
       url: tab?.url || info.pageUrl,
       title: tab?.title,
       selection: info.selectionText,
     };
-  } else if (info.menuItemId === "save-to-markstash") {
-    if (info.linkUrl) {
-      payload = { url: info.linkUrl };
-    } else {
-      payload = {
-        url: tab?.url || info.pageUrl,
-        title: tab?.title,
-      };
-    }
+  } else if (info.menuItemId === "save-page") {
+    payload = info.linkUrl
+      ? { url: info.linkUrl }
+      : { url: tab?.url || info.pageUrl, title: tab?.title };
   }
 
   try {
@@ -58,30 +54,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
     const data = await resp.json();
-
-    if (data.ok) {
-      // Show success badge
-      chrome.action.setBadgeText({ text: "✓", tabId: tab?.id });
-      chrome.action.setBadgeBackgroundColor({ color: "#22c55e", tabId: tab?.id });
-      setTimeout(() => {
-        chrome.action.setBadgeText({ text: "", tabId: tab?.id });
-      }, 2000);
-    } else {
-      chrome.action.setBadgeText({ text: "✗", tabId: tab?.id });
-      chrome.action.setBadgeBackgroundColor({ color: "#ef4444", tabId: tab?.id });
-      setTimeout(() => {
-        chrome.action.setBadgeText({ text: "", tabId: tab?.id });
-      }, 3000);
-    }
+    showBadge(tab?.id, data.ok ? "✓" : "✗", data.ok ? "#22c55e" : "#ef4444");
   } catch (e) {
     console.error("MarkStash: Failed to save", e);
-    chrome.action.setBadgeText({ text: "!", tabId: tab?.id });
-    chrome.action.setBadgeBackgroundColor({ color: "#f59e0b", tabId: tab?.id });
-    setTimeout(() => {
-      chrome.action.setBadgeText({ text: "", tabId: tab?.id });
-    }, 3000);
+    showBadge(tab?.id, "!", "#f59e0b");
   }
 });
 
@@ -89,7 +66,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "save-current-tab") {
     handleSaveCurrentTab(message).then(sendResponse);
-    return true; // async response
+    return true; // async
+  }
+  if (message.type === "ping") {
+    sendResponse({ ok: true });
+    return false;
   }
 });
 
@@ -109,9 +90,20 @@ async function handleSaveCurrentTab(message) {
         tags: message.tags || [],
       }),
     });
-
     return await resp.json();
   } catch (e) {
-    return { ok: false, error: `Cannot connect to markstash server at ${serverUrl}. Run: markstash serve` };
+    return {
+      ok: false,
+      error: `Cannot connect to markstash server at ${serverUrl}.\nRun: markstash serve`,
+    };
   }
+}
+
+function showBadge(tabId, text, color) {
+  if (!tabId) return;
+  chrome.action.setBadgeText({ text, tabId });
+  chrome.action.setBadgeBackgroundColor({ color, tabId });
+  setTimeout(() => {
+    chrome.action.setBadgeText({ text: "", tabId });
+  }, 2500);
 }
