@@ -100,6 +100,10 @@
     }
     .install-cmd button:hover { color: var(--fg); }
     .hero .ctas { display: flex; gap: 0.75rem; margin-bottom: 2rem; }
+    .hero-waitlist { margin-bottom: 1.5rem; max-width: 440px; }
+    .hero-waitlist .waitlist-form { margin-bottom: 0; }
+    .hero-waitlist .waitlist-form input { font-size: 0.85rem; padding: 0.65rem 0.875rem; }
+    .hero-waitlist .waitlist-form button { font-size: 0.85rem; padding: 0.65rem 1.25rem; }
     .hero .stats { display: flex; gap: 2.5rem; }
     .hero .stat-val { font-size: 1.5rem; font-weight: 500; color: var(--sage-dark); }
     .hero .stat-label { font-size: 0.8rem; color: var(--muted); }
@@ -294,7 +298,18 @@
 
         <div class="ctas">
           <a href="#install" class="btn btn-primary">Get Started →</a>
-          <a href="#features" class="btn btn-ghost">See Features</a>
+          <a href="#waitlist" class="btn btn-ghost">Join Early Access</a>
+        </div>
+
+        <!-- Inline waitlist in hero -->
+        <div class="hero-waitlist">
+          <form class="waitlist-form" onsubmit="handleWaitlist(event)" style="margin-bottom:0;">
+            <input type="email" name="email" placeholder="you@example.com" required>
+            <button type="submit">🍴 Join Waitlist</button>
+          </form>
+          <div class="waitlist-success" id="hero-waitlist-success">
+            ✓ You're on the list!
+          </div>
         </div>
 
         <div class="stats">
@@ -344,6 +359,38 @@
           </div>
         </div>
         <div class="terminal-float">No database. No Docker. Just .md files.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Install (first thing after hero) -->
+<section id="install">
+  <div class="container">
+    <div class="section-header">
+      <h2>Up and running in <span class="accent">60 seconds</span></h2>
+      <p>No database. No Docker. No accounts. Just clone and go.</p>
+    </div>
+
+    <div style="max-width:640px;">
+      <div class="feature-card" style="margin-bottom:1rem;padding:1.25rem;">
+        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">1. Clone & Install</h3>
+        <div class="feature-cmd mono" style="margin-top:0.5rem;"><span class="dollar">$</span> git clone https://github.com/ameno-/nomfeed && cd nomfeed && bun install && bun link</div>
+      </div>
+      <div class="feature-card" style="margin-bottom:1rem;padding:1.25rem;">
+        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">2. Save something</h3>
+        <div class="feature-cmd mono" style="margin-top:0.5rem;"><span class="dollar">$</span> nomfeed add https://any-url.com</div>
+      </div>
+      <div class="feature-card" style="margin-bottom:1rem;padding:1.25rem;">
+        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">3. Search your library</h3>
+        <div class="feature-cmd mono" style="margin-top:0.5rem;"><span class="dollar">$</span> nomfeed search "query"</div>
+      </div>
+      <div class="feature-card" style="padding:1.25rem;">
+        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">Optional: LLM Extraction</h3>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">Bring your own OpenRouter key. Access any model.</p>
+        <div class="feature-cmd mono"><span class="dollar">$</span> export OPENROUTER_API_KEY=your-key</div>
       </div>
     </div>
   </div>
@@ -475,40 +522,6 @@
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- Install -->
-<section id="install">
-  <div class="container">
-    <div class="section-header">
-      <h2>Up and running in <span class="accent">60 seconds</span></h2>
-      <p>No database. No Docker. No accounts. Just clone and go.</p>
-    </div>
-
-    <div style="max-width:640px;">
-      <div class="feature-card" style="margin-bottom:1rem;padding:1.25rem;">
-        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">1. Clone & Install</h3>
-        <div class="feature-cmd mono" style="margin-top:0.5rem;"><span class="dollar">$</span> git clone https://github.com/ameno-/nomfeed && cd nomfeed && bun install && bun link</div>
-      </div>
-      <div class="feature-card" style="margin-bottom:1rem;padding:1.25rem;">
-        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">2. Save something</h3>
-        <div class="feature-cmd mono" style="margin-top:0.5rem;"><span class="dollar">$</span> nomfeed add https://any-url.com</div>
-      </div>
-      <div class="feature-card" style="margin-bottom:1rem;padding:1.25rem;">
-        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">3. Search your library</h3>
-        <div class="feature-cmd mono" style="margin-top:0.5rem;"><span class="dollar">$</span> nomfeed search "query"</div>
-      </div>
-      <div class="feature-card" style="padding:1.25rem;">
-        <h3 style="font-size:0.85rem;margin-bottom:0.25rem;">Optional: LLM Extraction</h3>
-        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">Bring your own OpenRouter key. Access any model.</p>
-        <div class="feature-cmd mono"><span class="dollar">$</span> export OPENROUTER_API_KEY=your-key</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
 <!-- Roadmap -->
 <section id="roadmap">
   <div class="container">
@@ -572,7 +585,7 @@
       <h2>Get early access to <span class="accent">what's next</span></h2>
       <p class="sub">Join the waitlist for cloud sync, team features, and managed extraction. We'll also share updates, tips, and new patterns.</p>
 
-      <form class="waitlist-form" id="waitlist-form" onsubmit="handleWaitlist(event)">
+      <form class="waitlist-form" onsubmit="handleWaitlist(event)">
         <input type="email" name="email" placeholder="you@example.com" required>
         <button type="submit">🍴 Join Waitlist</button>
       </form>
@@ -614,17 +627,17 @@ function copyCmd(btn) {
 
 function handleWaitlist(e) {
   e.preventDefault();
-  const form = document.getElementById('waitlist-form');
+  const form = e.target;
   const email = form.querySelector('input[name="email"]').value;
 
-  // For now: store in localStorage + show success
-  // Replace with real endpoint (Buttondown, Loops, or your own API)
+  // Store in localStorage + show success on all waitlist forms
   const existing = JSON.parse(localStorage.getItem('nomfeed-waitlist') || '[]');
   existing.push({ email, ts: new Date().toISOString() });
   localStorage.setItem('nomfeed-waitlist', JSON.stringify(existing));
 
-  form.style.display = 'none';
-  document.getElementById('waitlist-success').classList.add('show');
+  // Hide all waitlist forms, show all success messages
+  document.querySelectorAll('.waitlist-form').forEach(f => f.style.display = 'none');
+  document.querySelectorAll('.waitlist-success').forEach(s => s.classList.add('show'));
 
   // TODO: Replace with actual API call
   // fetch('https://api.nomfeed.dev/waitlist', {
