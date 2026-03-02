@@ -1,4 +1,6 @@
 node_modules/
+.venv/
 bun.lock
 *.log
 .DS_Store
+dist/
