@@ -191,6 +191,32 @@ Each `.md` file includes YAML frontmatter with source, title, and timestamp. Fil
 | `NOMFEED_MODEL` | Override default model | No |
 | `NOMFEED_DIR` | Override data directory | No (default: `~/.nomfeed`) |
 
+## Agent Skill
+
+NomFeed ships with a [Pi](https://github.com/badlogic/pi-coding-agent) / [Agent Skills](https://agentskills.io) compatible skill in `skills/nomfeed/`. Install it so your coding agent can save, search, and extract content on your behalf.
+
+### Install the skill
+
+```bash
+# Copy to your global skills directory
+cp -r skills/nomfeed ~/.pi/agent/skills/nomfeed
+
+# Or symlink it (stays in sync with repo updates)
+ln -sf "$(pwd)/skills/nomfeed" ~/.pi/agent/skills/nomfeed
+```
+
+The skill is also compatible with other harnesses that support the Agent Skills standard:
+
+```bash
+# Claude Code
+cp -r skills/nomfeed ~/.claude/skills/nomfeed
+
+# Codex
+cp -r skills/nomfeed ~/.codex/skills/nomfeed
+```
+
+Once installed, your agent will automatically trigger NomFeed on phrases like *"save this URL"*, *"bookmark this"*, *"search my saved content"*, *"extract insights from this video"*, etc.
+
 ## Architecture
 
 See [DESIGN.md](DESIGN.md) for the full system architecture, conversion strategies, extraction pipeline, and design decisions.
