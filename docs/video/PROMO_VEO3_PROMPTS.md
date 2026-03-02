@@ -238,6 +238,106 @@ cluttered design, 3D effects, particle effects, busy background
 
 ---
 
+## Master Negative Prompt
+
+Apply this to **every shot**. Copy the full block into the `Technical (Negative Prompt)` 
+field. It's long on purpose — Veo 3 respects specificity and the more explicitly you 
+exclude failure modes, the cleaner the generation.
+
+```
+Technical (Negative Prompt):
+
+# Text & UI artifacts
+subtitles, captions, closed captions, text overlays, on-screen text, title cards, 
+lower thirds, watermark, logo, branding, credit text, copyright notice, URL bar, 
+browser chrome, UI elements, progress bars, loading indicators, notification popups, 
+chat bubbles, emoji overlays, hashtags, social media handles, "subscribe" text, 
+"like and subscribe", chapter markers, timestamp text
+
+# Audio hallucinations
+live studio audience, laugh track, applause, audience cheering, background music, 
+soundtrack, musical score, upbeat music, dramatic music, elevator music, royalty-free 
+music, stock music, jingle, theme song, news broadcast music, YouTube intro music, 
+podcast intro, sound logo, audio branding
+
+# Horror / wrong tone
+horror aesthetic, jump scare, threatening atmosphere, demonic, evil, sinister, 
+malevolent, creepy, unsettling, dystopian, post-apocalyptic, dark ambient, 
+industrial noise, screaming, growling, monster sounds, alien sounds, glitch horror, 
+blood, gore, violence, body horror, cosmic horror, Lovecraftian tentacles, teeth, 
+eyes inside the void, faces emerging from the void, skull imagery
+
+# Wrong visual style
+neon colors, cyberpunk aesthetic, vaporwave, synthwave, RGB gaming lighting, 
+saturated colors, high-contrast pop art, cartoon style, anime style, pixel art, 
+low-poly 3D, video game aesthetic, stock footage look, corporate stock photo feel, 
+PowerPoint presentation, infographic style, flat design illustration, clip art
+
+# Quality issues
+blurry, out of focus, soft focus on wrong element, motion blur artifacts, 
+compression artifacts, pixelation, banding, aliasing, noise, film grain 
+(excessive), lens distortion (excessive), chromatic aberration (excessive), 
+low resolution, upscaled artifacts, AI generation artifacts, morphing faces, 
+flickering, strobing, temporal inconsistency, frame skipping, jittery camera
+
+# Wrong environment
+cluttered room, messy environment, modern office, server room, data center, 
+laboratory, spaceship interior, outdoor scene, city street, generic living room, 
+furniture overload, decorations everywhere, posters on walls, monitors and screens, 
+multiple light sources fighting, fluorescent lighting, overhead office lighting, 
+LED strip lighting, colored accent lighting
+
+# Wrong physics / movement
+fast motion, rapid movement, shaky camera, handheld camera shake, action sequences, 
+explosions, breaking glass, destruction, chaotic particle effects, sparks flying, 
+electrical arcs, lightning, fire (uncontrolled), tornado, storms, aggressive 
+fluid dynamics, splashing, splattering
+
+# Character / figure issues
+human face, human figure, humanoid character, person, man, woman, child, crowd, 
+group of people, hands reaching, human eyes, human mouth, human voice coming from 
+a visible person, talking head, presenter, narrator on screen, actor, model
+
+# Wrong content representation
+actual readable web pages, real website screenshots, real YouTube interface, 
+browser window, terminal window, code editor, real application screenshots, 
+phone screen, laptop screen, monitor displaying content, desktop interface
+```
+
+### Per-Shot Negative Addenda
+
+Each shot has specific failure modes to guard against on top of the master list:
+
+**Shot 1 (Awakening):** Also exclude: rapid opening, explosive reveal, energy blast, 
+shockwave, dramatic zoom, lens flare overload, the void being a portal or gateway 
+showing another world inside
+
+**Shot 2 (Feeding):** Also exclude: content cards having legible real text or real 
+logos, aggressive suction motion, vacuum cleaner aesthetic, tornado funnel shape, 
+the void eating the room or furniture, content cards being rigid/stiff instead of 
+translucent and ethereal
+
+**Shot 3 (Digesting):** Also exclude: biological gross-out (intestines, organs, 
+digestion imagery), matrix-style green code rain, circuit board patterns, 
+mechanical gears, industrial processing plant aesthetic, conveyor belt, 
+the void interior looking like a machine
+
+**Shot 4 (Speaking Back):** Also exclude: text being illegible gibberish, text 
+being actual paragraphs of readable content (should be fragments/glimpses only), 
+projector beam aesthetic, the void vomiting or ejecting content forcefully, 
+explosion outward, scattered debris
+
+**Shot 5 (Always Hungry):** Also exclude: menacing crescendo, the void growing 
+to fill the room, the room being consumed/destroyed, threatening approach toward 
+camera, jump cut to black, horror ending, cliffhanger tension, the void becoming 
+unstable or dangerous
+
+**End Card:** Also exclude: animated transitions, 3D logo spin, particle explosion 
+reveal, glossy/shiny materials, drop shadow, gradient backgrounds (other than subtle 
+texture), motion graphics, kinetic typography
+
+---
+
 ## Production Notes
 
 ### Voice Direction
