@@ -1,20 +1,43 @@
 /**
  * HTTP Server — local endpoint for Chrome extension and external tools.
  *
- * POST /add             { url, title?, tags?, selection?, extract?, patterns? }
- * GET  /items           List all items (?query=&tag=&type=&limit=)
- * GET  /items/:id       Read item + content
- * DELETE /items/:id     Delete item
- * GET  /search?q=       Full-text search
- * GET  /patterns        List available extraction patterns
- * GET  /health          Health check
+ * POST /add                { url, title?, tags?, selection?, extract?, patterns?, capture? }
+ * GET  /items              List items (?query=&tag=&type=&limit=&hasCaptures=1)
+ * GET  /items/:id          Read item + content
+ * GET  /items/:id/bundle   Read full item bundle
+ * GET  /items/:id/captures List captures for an item
+ * POST /items/:id/captures Create a capture for an item
+ * GET  /captures/:id       Read one capture by capture ID
+ * DELETE /items/:id        Delete item
+ * GET  /search?q=          Full-text search
+ * GET  /patterns           List available extraction patterns
+ * GET  /health             Health check
  */
 
-import { addItem, listItems, readContent, readExtraction, saveExtraction, getItem, deleteItem, searchContent, itemCount } from "./store";
+import {
+  addItem,
+  deleteItem,
+  findArtifact,
+  findCapture,
+  getItem,
+  itemCount,
+  listArtifacts,
+  listCaptures,
+  listItems,
+  readBundle,
+  readContent,
+  readExtraction,
+  saveCapture,
+  saveExtraction,
+  saveItemArtifact,
+  searchContent,
+  totalCaptureCount,
+} from "./store";
 import { urlToMarkdown, fileToMarkdown, noteToMarkdown } from "./convert";
 import { extract } from "./extract";
 import { listPatterns, DEFAULT_EXTRACT_PATTERNS } from "./patterns";
 import { isConfigured } from "./llm";
+import type { SaveCaptureInput } from "./capture";
 
 export async function startServer(port: number) {
   const server = Bun.serve({
@@ -73,6 +96,19 @@ export async function startServer(port: number) {
             strategy: result.strategy,
           });
 
+          const capture = body.capture
+            ? saveCapture(item.id, {
+                ...(body.capture as SaveCaptureInput),
+                url: body.capture.url || body.url || source,
+                title: body.capture.title || body.title || result.title,
+                tags: body.capture.tags || body.tags || [],
+              })
+            : null;
+
+          const artifact = body.artifact
+            ? saveItemArtifact(item.id, body.artifact)
+            : null;
+
           // Run extraction if requested (async — don't block the response)
           let extracting = false;
           if (body.extract && isConfigured()) {
@@ -95,7 +131,15 @@ export async function startServer(port: number) {
             })();
           }
 
-          return json({ ok: true, data: { ...item, extracting } }, 200, corsHeaders);
+          return json({
+            ok: true,
+            data: {
+              ...item,
+              extracting,
+              ...(capture ? { capture } : {}),
+              ...(artifact ? { artifact } : {}),
+            },
+          }, 200, corsHeaders);
         }
 
         // ── GET /patterns ────────────────────────────────────────────────
@@ -117,6 +161,7 @@ export async function startServer(port: number) {
             tag: url.searchParams.get("tag") || undefined,
             type: url.searchParams.get("type") || undefined,
             limit: url.searchParams.get("limit") ? parseInt(url.searchParams.get("limit")!) : undefined,
+            hasCaptures: ["1", "true", "yes"].includes((url.searchParams.get("hasCaptures") || "").toLowerCase()),
           });
           return json({ ok: true, data: items }, 200, corsHeaders);
         }
@@ -133,6 +178,77 @@ export async function startServer(port: number) {
           const data: any = { ...item, content };
           if (extraction) data.extraction = extraction;
           return json({ ok: true, data }, 200, corsHeaders);
+        }
+
+        const bundleMatch = path.match(/^\/items\/([^/]+)\/bundle$/);
+        if (bundleMatch && req.method === "GET") {
+          const bundle = readBundle(bundleMatch[1]);
+          if (!bundle) return json({ ok: false, error: "Not found" }, 404, corsHeaders);
+          return json({ ok: true, data: bundle }, 200, corsHeaders);
+        }
+
+        const captureCollectionMatch = path.match(/^\/items\/([^/]+)\/captures$/);
+        if (captureCollectionMatch && req.method === "GET") {
+          const item = getItem(captureCollectionMatch[1]);
+          if (!item) return json({ ok: false, error: "Not found" }, 404, corsHeaders);
+          return json({ ok: true, data: listCaptures(item.id) }, 200, corsHeaders);
+        }
+
+        if (captureCollectionMatch && req.method === "POST") {
+          const item = getItem(captureCollectionMatch[1]);
+          if (!item) return json({ ok: false, error: "Not found" }, 404, corsHeaders);
+          const body = await req.json() as SaveCaptureInput;
+          const capture = saveCapture(item.id, body);
+          return json({ ok: true, data: capture }, 200, corsHeaders);
+        }
+
+        const artifactCollectionMatch = path.match(/^\/items\/([^/]+)\/artifacts$/);
+        if (artifactCollectionMatch && req.method === "GET") {
+          const item = getItem(artifactCollectionMatch[1]);
+          if (!item) return json({ ok: false, error: "Not found" }, 404, corsHeaders);
+          return json({ ok: true, data: listArtifacts(item.id) }, 200, corsHeaders);
+        }
+
+        if (artifactCollectionMatch && req.method === "POST") {
+          const item = getItem(artifactCollectionMatch[1]);
+          if (!item) return json({ ok: false, error: "Not found" }, 404, corsHeaders);
+          const body = await req.json() as any;
+          const artifact = saveItemArtifact(item.id, body);
+          return json({ ok: true, data: artifact }, 200, corsHeaders);
+        }
+
+        const captureMatch = path.match(/^\/captures\/([^/]+)$/);
+        if (captureMatch && req.method === "GET") {
+          const found = findCapture(captureMatch[1]);
+          if (!found) return json({ ok: false, error: "Not found" }, 404, corsHeaders);
+          return json({
+            ok: true,
+            data: {
+              item: {
+                id: found.item.id,
+                title: found.item.title,
+                source: found.item.source,
+              },
+              capture: found.capture,
+            },
+          }, 200, corsHeaders);
+        }
+
+        const artifactMatch = path.match(/^\/artifacts\/([^/]+)$/);
+        if (artifactMatch && req.method === "GET") {
+          const found = findArtifact(artifactMatch[1]);
+          if (!found) return json({ ok: false, error: "Not found" }, 404, corsHeaders);
+          return json({
+            ok: true,
+            data: {
+              item: {
+                id: found.item.id,
+                title: found.item.title,
+                source: found.item.source,
+              },
+              artifact: found.artifact,
+            },
+          }, 200, corsHeaders);
         }
 
         // ── DELETE /items/:id ────────────────────────────────────────────
@@ -156,7 +272,12 @@ export async function startServer(port: number) {
 
         // ── GET /health ──────────────────────────────────────────────────
         if (path === "/health") {
-          return json({ ok: true, items: itemCount(), llmConfigured: isConfigured() }, 200, corsHeaders);
+          return json({
+            ok: true,
+            items: itemCount(),
+            captures: totalCaptureCount(),
+            llmConfigured: isConfigured(),
+          }, 200, corsHeaders);
         }
 
         return json({ ok: false, error: "Not found" }, 404, corsHeaders);
@@ -166,15 +287,23 @@ export async function startServer(port: number) {
     },
   });
 
-  console.log(`nomfeed server running on http://localhost:${port}`);
+  console.log(`nomfeed server running on http://localhost:${server.port}`);
   console.log(`  POST /add          — Save URL/file/note (+ optional extract)`);
   console.log(`  GET  /patterns     — List extraction patterns`);
   console.log(`  GET  /items        — List items`);
   console.log(`  GET  /items/:id    — Read item`);
+  console.log(`  GET  /items/:id/bundle   — Read item bundle`);
+  console.log(`  GET  /items/:id/captures — List captures`);
+  console.log(`  POST /items/:id/captures — Create capture`);
+  console.log(`  GET  /items/:id/artifacts — List item artifacts`);
+  console.log(`  POST /items/:id/artifacts — Create item artifact`);
+  console.log(`  GET  /captures/:id       — Read capture`);
+  console.log(`  GET  /artifacts/:id      — Read artifact`);
   console.log(`  DELETE /items/:id  — Delete item`);
   console.log(`  GET  /search?q=    — Search content`);
   console.log(`  GET  /health       — Health check`);
   console.log(`\nPress Ctrl+C to stop.`);
+  return server;
 }
 
 function json(data: any, status: number, headers: Record<string, string>) {

@@ -2,16 +2,17 @@
 
 ## Overview
 
-NomFeed is a local-first CLI tool that converts URLs, YouTube videos, and files into clean markdown. It stores everything as flat files — a JSON index plus `.md` content files — with no database, no Docker, and no daemon process.
+NomFeed is a local-first CLI tool that converts URLs, YouTube videos, and files into clean markdown. It now uses a page-centric flat-file layout: each page item owns its source markdown, optional extraction, and any annotation captures. There is still no database, Docker, or daemon process.
 
 ## System Architecture
 
 ```
-                    ┌──────────────────┐
-                    │  Chrome Extension │
-                    │   (Manifest V3)  │
-                    └────────┬─────────┘
+                    ┌──────────────────────┐
+                    │  Chrome Extension    │
+                    │ launcher + popup     │
+                    └────────┬─────────────┘
                              │ POST /add
+                             │ POST /items/:id/captures
                              ▼
 ┌─────────┐    ┌──────────────────────┐    ┌──────────────┐
 │  CLI    │───▶│    HTTP Server       │    │  MCP Server  │
@@ -27,10 +28,13 @@ NomFeed is a local-first CLI tool that converts URLs, YouTube videos, and files 
                          ▼
                   ┌──────────────┐
                   │  ~/.nomfeed/ │
-                  │  ├ items.json│
+                  │  ├ index.json│
+                  │  ├ items/    │
+                  │  │  └ id/    │
+                  │  │    ├ source.md
+                  │  │    ├ extraction.md
+                  │  │    └ captures/
                   │  └ content/  │
-                  │    ├ id.md   │
-                  │    └ id.ext… │
                   └──────────────┘
 ```
 
@@ -39,7 +43,7 @@ NomFeed is a local-first CLI tool that converts URLs, YouTube videos, and files 
 | File | Purpose | Lines |
 |------|---------|-------|
 | `src/cli.ts` | CLI entry point, arg parsing, all commands | Main interface |
-| `src/store.ts` | Flat-file storage: JSON index + .md read/write | Data layer |
+| `src/store.ts` | Page-centric flat-file storage + legacy compatibility | Data layer |
 | `src/convert.ts` | URL → markdown (3-strategy cascade) | Fetch layer |
 | `src/youtube.ts` | YouTube → markdown via yt-dlp + VTT parsing | Fetch layer |
 | `src/extract.ts` | LLM extraction orchestrator (parallel patterns) | Intelligence |
@@ -47,6 +51,7 @@ NomFeed is a local-first CLI tool that converts URLs, YouTube videos, and files 
 | `src/llm.ts` | OpenRouter API client with model fallback chain | Intelligence |
 | `src/server.ts` | HTTP API server (Bun.serve) | Interface |
 | `src/mcp.ts` | Model Context Protocol server (stdio) | Interface |
+| `src/capture.ts` | Capture types, normalization, and capture analysis | Capture layer |
 
 ## URL Conversion Strategy
 
@@ -106,12 +111,20 @@ Custom patterns: add `~/.nomfeed/patterns/<name>/system.md`
 
 ## Storage Format
 
-```
+```text
 ~/.nomfeed/
-├── items.json                    # Array of Item metadata
-└── content/
-    ├── {id}.md                   # Converted markdown content
-    └── {id}.extraction.md        # LLM extraction output (optional)
+├── index.json                    # Array of Item metadata
+├── items.json                    # Legacy-compatible mirror
+├── items/
+│   └── {id}/
+│       ├── item.json             # Page metadata
+│       ├── source.md             # Converted markdown content
+│       ├── extraction.md         # LLM extraction output (optional)
+│       └── captures/
+│           └── {captureId}/
+│               ├── annotation.json
+│               └── screenshots/
+└── content/                      # Legacy flat-file content (readable, not canonical)
 ```
 
 ### Item Schema
@@ -122,18 +135,22 @@ interface Item {
   type: 'url' | 'file' | 'note';
   title: string;
   source: string;          // URL, file path, or "note"
+  canonicalSource?: string;
   tags: string[];
   strategy?: string;       // cloudflare | jina | readability | yt-dlp | markitdown
   savedAt: string;         // ISO 8601
+  updatedAt?: string;
   extracted?: boolean;
   extractedAt?: string;
   extractionPatterns?: string[];
+  captureCount?: number;
+  latestCaptureId?: string;
 }
 ```
 
 ### Content Files
 
-Each `.md` file is self-contained with YAML frontmatter:
+Each `source.md` file is self-contained with YAML frontmatter:
 
 ```markdown
 ---
@@ -153,9 +170,13 @@ The server (`nomfeed serve`) exposes a simple REST API on port 24242:
 
 | Method | Path | Body / Params | Response |
 |--------|------|---------------|----------|
-| POST | `/add` | `{ url, title?, tags?, extract? }` | Item + `{ extracting? }` |
-| GET | `/items` | `?query=&tag=&type=&limit=` | Item[] |
+| POST | `/add` | `{ url, title?, tags?, extract?, capture? }` | Item + `{ extracting? }` |
+| GET | `/items` | `?query=&tag=&type=&limit=&hasCaptures=1` | Item[] |
 | GET | `/items/:id` | — | Item + content |
+| GET | `/items/:id/bundle` | — | Item + content + extraction + captures |
+| GET | `/items/:id/captures` | — | Capture[] |
+| POST | `/items/:id/captures` | capture payload | Capture |
+| GET | `/captures/:id` | — | Capture + parent item |
 | DELETE | `/items/:id` | — | `{ deleted }` |
 | GET | `/search?q=` | — | SearchResult[] |
 | GET | `/health` | — | `{ ok }` |
@@ -168,7 +189,7 @@ When `extract: true` is passed to POST `/add`, the server saves the item immedia
 
 - `nomfeed_add` — Save URL or file path
 - `nomfeed_list` — List items with optional filters
-- `nomfeed_read` — Read content (modes: content, extract, full)
+- `nomfeed_read` — Read content (modes: content, extract, full, captures, bundle)
 - `nomfeed_search` — Full-text search
 - `nomfeed_extract` — Run extraction on existing item
 - `nomfeed_delete` — Delete item
@@ -177,11 +198,13 @@ When `extract: true` is passed to POST `/add`, the server saves the item immedia
 ## Chrome Extension
 
 Manifest V3 extension with:
-- **Popup:** Save current tab, add tags, toggle extraction
+- **Popup:** Remote control for page tools, save actions, and extraction defaults
+- **Injected page deck:** floating launcher + command deck on each normal page
+- **Injected annotator:** in-page capture tray for element annotations
 - **Context menu:** Right-click → "Save to NomFeed"
 - **Background service worker:** Handles save requests via POST to local server
 
-The extension is a thin client — all logic lives in the server. Extension code is in `extension/`.
+The extension remains a thin client. NomFeed still owns canonical storage and bundle assembly; the extension only triggers saves and captures.
 
 ## Design Decisions
 
@@ -193,6 +216,8 @@ The extension is a thin client — all logic lives in the server. Extension code
 
 4. **Dumb pipe extraction** — Each pattern = one focused API call. No orchestrator, no chain-of-thought, no agents. Simple is reliable.
 
-5. **Separate extraction storage** — `{id}.extraction.md` alongside `{id}.md` keeps content and extraction independent. Read one or both.
+5. **Grouped page artifacts** — `items/<id>/` keeps source, extraction, and captures together while staying inspectable.
 
 6. **Async server extraction** — Server returns immediately after save, runs LLM in background. Prevents timeout issues with slow models.
+
+7. **Legacy readability** — Existing flat content files remain readable so migration can be incremental rather than destructive.

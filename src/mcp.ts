@@ -13,7 +13,21 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { addItem, listItems, readContent, readExtraction, saveExtraction, searchContent, deleteItem, getItem, itemCount, getDataDir } from "./store";
+import {
+  addItem,
+  deleteItem,
+  getDataDir,
+  getItem,
+  itemCount,
+  listCaptures,
+  listItems,
+  readBundle,
+  readContent,
+  readExtraction,
+  saveExtraction,
+  searchContent,
+  totalCaptureCount,
+} from "./store";
 import { urlToMarkdown, fileToMarkdown, noteToMarkdown } from "./convert";
 import { extract } from "./extract";
 import { listPatterns, DEFAULT_EXTRACT_PATTERNS } from "./patterns";
@@ -91,9 +105,10 @@ export async function startMcp() {
       tag: z.string().optional().describe("Filter by tag"),
       type: z.enum(["url", "file", "note"]).optional().describe("Filter by type"),
       limit: z.number().optional().describe("Max items to return"),
+      hasCaptures: z.boolean().optional().describe("Only return items that have annotation captures"),
     },
-    async ({ query, tag, type, limit }) => {
-      const items = listItems({ query, tag, type, limit });
+    async ({ query, tag, type, limit, hasCaptures }) => {
+      const items = listItems({ query, tag, type, limit, hasCaptures });
       return {
         content: [{
           type: "text" as const,
@@ -107,10 +122,10 @@ export async function startMcp() {
 
   server.tool(
     "nomfeed_read",
-    "Read content of a saved item. Use mode='extract' for just the extraction, mode='full' for content + extraction.",
+    "Read content of a saved item. Use mode='extract' for just the extraction, mode='full' for content + extraction, mode='captures' for captures only, mode='bundle' for the full page bundle.",
     {
       id: z.string().describe("Item ID"),
-      mode: z.enum(["content", "extract", "full"]).optional().describe("What to read: content (default), extract (extraction only), full (both)"),
+      mode: z.enum(["content", "extract", "full", "captures", "bundle"]).optional().describe("What to read"),
     },
     async ({ id, mode }) => {
       const item = getItem(id);
@@ -121,10 +136,16 @@ export async function startMcp() {
       const m = mode || "content";
       const mainContent = readContent(id);
       const extraction = readExtraction(id);
+      const captures = listCaptures(id);
+      const bundle = readBundle(id);
 
       let text: string;
       if (m === "extract") {
         text = extraction || "No extraction available. Use nomfeed_extract to run extraction.";
+      } else if (m === "captures") {
+        text = JSON.stringify(captures, null, 2);
+      } else if (m === "bundle") {
+        text = JSON.stringify(bundle, null, 2);
       } else if (m === "full") {
         text = (mainContent || "Content file missing");
         if (extraction) text += "\n\n---\n\n# Extraction\n\n" + extraction;
@@ -224,7 +245,7 @@ export async function startMcp() {
       return {
         content: [{
           type: "text" as const,
-          text: JSON.stringify({ ok: true, items: itemCount(), dataDir: getDataDir() }),
+          text: JSON.stringify({ ok: true, items: itemCount(), captures: totalCaptureCount(), dataDir: getDataDir() }),
         }],
       };
     }

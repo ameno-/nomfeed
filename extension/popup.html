@@ -4,339 +4,283 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=340">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --paper: hsl(44 34% 97%);
+      --paper-deep: hsl(40 22% 92%);
+      --ink: hsl(40 6% 16%);
+      --muted: hsl(40 8% 45%);
+      --line: hsl(35 16% 84%);
+      --save: hsl(100 12% 63%);
+      --extract-a: hsl(36 78% 73%);
+      --extract-b: hsl(24 74% 67%);
+      --annotate-a: hsl(24 78% 47%);
+      --annotate-b: hsl(18 74% 41%);
+    }
 
+    * { box-sizing: border-box; }
     html, body {
+      margin: 0;
       width: 340px;
-      min-height: 280px;
+      min-height: 360px;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: hsl(40 20% 96%);
-      color: hsl(40 6% 16%);
+      font-family: "Avenir Next", "SF Pro Rounded", "Segoe UI", sans-serif;
+      background: linear-gradient(160deg, var(--paper) 0%, var(--paper-deep) 100%);
+      color: var(--ink);
       padding: 16px;
     }
 
-    /* Header */
+    .shell {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
     .header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 10px;
     }
 
-    .header .logo-icon {
-      width: 22px;
-      height: 22px;
-      border-radius: 5px;
-      background: hsl(100 12% 63%);
-      display: flex;
+    .mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      background: var(--save);
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      line-height: 1;
+      box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.4);
+      font-size: 15px;
     }
 
-    .header h1 {
-      font-size: 15px;
-      font-weight: 500;
-      color: hsl(40 6% 16%);
+    .title {
+      font-size: 16px;
+      font-weight: 600;
       letter-spacing: -0.01em;
     }
 
-    /* URL display */
-    .url-display {
-      font-size: 12px;
-      color: hsl(40 8% 50%);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 12px;
-      padding: 4px 0;
-    }
-
-    /* Fields */
-    .field { margin-bottom: 10px; }
-
-    label {
-      display: block;
+    .subtitle {
+      margin-top: 1px;
+      color: var(--muted);
       font-size: 11px;
-      color: hsl(40 8% 50%);
+    }
+
+    .page-card,
+    .panel {
+      padding: 12px;
+      border-radius: 14px;
+      background: hsl(40 20% 95% / 0.9);
+      border: 1px solid var(--line);
+    }
+
+    .label {
+      margin-bottom: 6px;
+      font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
     }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 8px 10px;
-      border: 1px solid hsl(35 15% 85%);
-      border-radius: 8px;
-      background: hsl(40 15% 94%);
-      color: hsl(40 6% 16%);
+    .page-title {
       font-size: 13px;
-      outline: none;
-      font-family: inherit;
-      transition: border-color 0.2s;
+      font-weight: 600;
+      line-height: 1.35;
     }
 
-    input[type="text"]:focus {
-      border-color: hsl(100 12% 63%);
-      background: white;
+    .page-url {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.45;
+      word-break: break-word;
     }
 
-    /* Extract toggle */
-    .extract-toggle {
-      display: flex;
-      align-items: center;
+    .actions {
+      display: grid;
       gap: 8px;
-      margin-bottom: 8px;
     }
 
-    .extract-toggle input[type="checkbox"] {
-      accent-color: hsl(100 12% 50%);
-      width: 14px;
-      height: 14px;
-      cursor: pointer;
-    }
-
-    .extract-toggle label {
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 11px 12px;
+      font: inherit;
       font-size: 13px;
-      color: hsl(40 6% 25%);
-      text-transform: none;
-      letter-spacing: 0;
-      margin: 0;
+      font-weight: 600;
+      color: var(--ink);
       cursor: pointer;
+      transition: transform 140ms ease, box-shadow 140ms ease;
     }
 
-    /* Pattern chips */
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px hsl(40 6% 16% / 0.08);
+    }
+
+    button:disabled {
+      opacity: 0.58;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .page-tools { background: hsl(40 22% 94%); border: 1px solid var(--line); }
+    .save { background: var(--save); }
+    .extract { background: linear-gradient(135deg, var(--extract-a), var(--extract-b)); }
+    .annotate { background: linear-gradient(135deg, var(--annotate-a), var(--annotate-b)); color: white; }
+
+    .meta {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
     .patterns {
-      display: none;
+      display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin-bottom: 10px;
-      padding: 8px;
-      background: hsl(40 15% 94%);
-      border-radius: 8px;
-      border: 1px solid hsl(35 15% 88%);
+      margin-top: 8px;
     }
 
-    .patterns.visible { display: flex; }
+    .twitter-panel {
+      border: 1px solid hsl(204 55% 82%);
+      background: linear-gradient(160deg, hsl(205 100% 97%) 0%, hsl(205 86% 93%) 100%);
+    }
 
-    .patterns .no-llm {
-      font-size: 11px;
-      color: hsl(40 8% 50%);
-      padding: 4px 0;
+    .twitter-save {
+      background: linear-gradient(135deg, hsl(204 94% 64%), hsl(212 88% 58%));
+      color: white;
     }
 
     .chip {
       font-size: 11px;
       padding: 4px 10px;
-      border-radius: 12px;
-      border: 1px solid hsl(35 15% 85%);
+      border-radius: 999px;
+      border: 1px solid var(--line);
       background: hsl(40 20% 96%);
-      color: hsl(40 8% 50%);
+      color: var(--muted);
       cursor: pointer;
-      transition: all 0.2s;
       user-select: none;
     }
 
-    .chip:hover {
-      border-color: hsl(35 15% 78%);
-      color: hsl(40 6% 25%);
-    }
-
     .chip.selected {
-      border-color: hsl(100 12% 63%);
-      background: hsl(100 12% 63% / 0.15);
-      color: hsl(100 12% 40%);
+      border-color: hsl(100 12% 55%);
+      background: hsl(100 12% 63% / 0.16);
+      color: hsl(100 18% 33%);
     }
 
-    /* Save button */
-    button#save {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      background: hsl(100 12% 63%);
-      color: hsl(40 6% 16%);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      margin-top: 4px;
-      transition: all 0.2s;
-      box-shadow: 0 1px 2px hsl(40 6% 16% / 0.08);
-    }
-
-    button#save:hover {
-      background: hsl(100 12% 55%);
-      box-shadow: 0 2px 8px hsl(100 12% 63% / 0.25);
-    }
-
-    button#save:active { background: hsl(100 12% 48%); }
-
-    button#save:disabled {
-      background: hsl(35 15% 85%);
-      color: hsl(40 8% 60%);
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    /* Status */
     .status {
-      margin-top: 10px;
-      font-size: 12px;
-      text-align: center;
       min-height: 18px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
     }
 
-    .status.success { color: hsl(100 20% 40%); }
-    .status.error { color: hsl(0 40% 50%); }
+    .status.success { color: hsl(100 20% 35%); }
+    .status.error { color: hsl(0 48% 45%); }
 
-    /* CLI output */
     .cli-output {
       display: none;
-      margin-top: 8px;
       padding: 8px 10px;
-      background: hsl(40 12% 92%);
-      border: 1px solid hsl(35 15% 85%);
-      border-radius: 8px;
-      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: hsl(40 18% 93%);
+      color: hsl(100 14% 34%);
+      font-family: "SF Mono", "Fira Code", monospace;
       font-size: 12px;
-      color: hsl(100 12% 45%);
       cursor: pointer;
-      position: relative;
-      word-break: break-all;
-      transition: border-color 0.2s;
     }
 
     .cli-output.visible { display: block; }
-    .cli-output:hover { border-color: hsl(100 12% 63%); }
 
-    .cli-output .copy-hint {
-      position: absolute;
-      top: -8px;
-      right: 8px;
-      font-size: 9px;
-      color: hsl(40 8% 55%);
-      background: hsl(40 20% 96%);
-      padding: 0 4px;
-      font-family: -apple-system, sans-serif;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    .settings {
+      display: none;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
     }
 
-    .cli-output.copied {
-      border-color: hsl(100 20% 45%);
-      color: hsl(100 20% 40%);
+    .settings.visible { display: block; }
+
+    input[type="text"] {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: hsl(0 0% 100% / 0.78);
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--ink);
+      outline: none;
     }
 
-    .cli-output .cli-line {
-      display: block;
-      padding: 1px 0;
-    }
-
-    .cli-output .cli-line + .cli-line {
-      margin-top: 4px;
-      padding-top: 4px;
-      border-top: 1px solid hsl(35 15% 88%);
-      color: hsl(40 8% 55%);
-      font-size: 11px;
-    }
-
-    /* Footer */
     .footer {
-      margin-top: 12px;
       text-align: center;
     }
 
     .footer a {
       font-size: 11px;
-      color: hsl(40 8% 55%);
+      color: var(--muted);
       text-decoration: none;
       cursor: pointer;
-      transition: color 0.2s;
-    }
-
-    .footer a:hover { color: hsl(100 12% 45%); }
-
-    /* Settings */
-    .settings {
-      display: none;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid hsl(35 15% 88%);
-    }
-
-    .settings.visible { display: block; }
-
-    button.btn-sm {
-      width: 100%;
-      padding: 6px;
-      border: none;
-      border-radius: 6px;
-      background: hsl(40 15% 94%);
-      border: 1px solid hsl(35 15% 85%);
-      color: hsl(40 8% 45%);
-      font-size: 12px;
-      cursor: pointer;
-      margin-top: 6px;
-      transition: all 0.2s;
-    }
-
-    button.btn-sm:hover {
-      background: hsl(35 20% 90%);
-      border-color: hsl(35 15% 78%);
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <span class="logo-icon">🍴</span>
-    <h1>NomFeed</h1>
-  </div>
-
-  <div class="url-display" id="url">Loading...</div>
-
-  <div class="field">
-    <label>Title</label>
-    <input type="text" id="title" placeholder="Auto-detected from page">
-  </div>
-
-  <div class="field">
-    <label>Tags</label>
-    <input type="text" id="tags" placeholder="comma, separated, tags">
-  </div>
-
-  <div class="extract-toggle">
-    <input type="checkbox" id="extract">
-    <label for="extract">Extract with LLM</label>
-  </div>
-
-  <div class="patterns" id="patterns">
-    <span class="no-llm" id="no-llm" style="display:none">Set OPENROUTER_API_KEY to enable extraction</span>
-  </div>
-
-  <button id="save">🍴 Nom this page</button>
-
-  <div class="status" id="status"></div>
-
-  <div class="cli-output" id="cli-output">
-    <span class="copy-hint">click to copy</span>
-    <span id="cli-cmd"></span>
-  </div>
-
-  <div class="footer">
-    <a id="settings-toggle">⚙ Settings</a>
-  </div>
-
-  <div class="settings" id="settings">
-    <div class="field">
-      <label>Server URL</label>
-      <input type="text" id="serverUrl" value="http://localhost:24242">
+  <div class="shell">
+    <div class="header">
+      <span class="mark">🍴</span>
+      <div>
+        <div class="title">NomFeed</div>
+        <div class="subtitle">page-centric capture tools</div>
+      </div>
     </div>
-    <button class="btn-sm" id="save-settings">Save Settings</button>
+
+    <div class="page-card">
+      <div class="label">Current Page</div>
+      <div class="page-title" id="pageTitle">Loading…</div>
+      <div class="page-url" id="pageUrl"></div>
+    </div>
+
+    <div class="actions">
+      <button class="page-tools" id="openDeck">Open page tools</button>
+      <button class="save" id="savePage">Save Page</button>
+      <button class="extract" id="saveExtract">Save + Extract</button>
+      <button class="annotate" id="annotatePage">Annotate Page</button>
+    </div>
+
+    <div class="panel twitter-panel" id="twitterPanel" hidden>
+      <div class="label">Twitter/X Enhancement</div>
+      <div class="meta" id="twitterMeta">Twitter artifact capture is available on this page.</div>
+      <div style="margin-top:8px">
+        <button class="twitter-save" id="saveTweet">Save Tweet Artifact</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Extraction Defaults</div>
+      <div class="meta" id="extractMeta">Loading server state…</div>
+      <div class="patterns" id="patterns"></div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="cli-output" id="cliOutput"></div>
+
+    <div class="footer">
+      <a id="settingsToggle">⚙ Settings</a>
+    </div>
+
+    <div class="settings" id="settings">
+      <div class="panel">
+        <div class="label">Server URL</div>
+        <input type="text" id="serverUrl" value="http://localhost:24242">
+        <div style="margin-top:8px">
+          <button class="page-tools" id="saveSettings">Save Settings</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="popup.js"></script>

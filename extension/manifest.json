@@ -4,6 +4,11 @@
   "version": "1.0.0",
   "description": "Nom the web. Feed your agents. Convert any page to markdown for AI agents.",
   "permissions": ["activeTab", "contextMenus", "storage"],
+  "host_permissions": [
+    "<all_urls>",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -18,5 +23,21 @@
   },
   "background": {
     "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["page-deck.js", "page-annotator.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "annotate-page": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+N",
+        "mac": "Command+Shift+N"
+      },
+      "description": "Start NomFeed annotation on the current page"
+    }
   }
 }

@@ -2,17 +2,19 @@
 
 **Nom the web. Feed your agents.**
 
-NomFeed converts any URL, YouTube video, or file into clean, structured markdown — and keeps it in a searchable local library. One CLI command to save. One command to search. Optional LLM extraction turns content into structured intelligence.
+NomFeed converts any URL, YouTube video, or file into clean, structured markdown — and keeps it in a searchable local library. It also supports page-centric annotation captures, so page content, extraction, screenshots, and element-level notes can live together.
 
 ```bash
 nomfeed add https://example.com/article          # URL → markdown
 nomfeed add https://youtube.com/watch?v=xyz       # YouTube transcript
 nomfeed add ./report.pdf                          # File → markdown
+nomfeed annotate https://example.com/article      # Open page for annotation
+nomfeed read AMxTn2tS5_ --bundle                  # Read content + extraction + captures
 nomfeed search "transformers"                     # Full-text search
 nomfeed read AMxTn2tS5_ --extract                 # Read LLM extraction
 ```
 
-No database. No Docker. No daemon. Just `.md` files in `~/.nomfeed/`.
+No database. No Docker. No daemon. Just local files in `~/.nomfeed/`.
 
 ---
 
@@ -65,12 +67,16 @@ nomfeed add <url>                    # URL → markdown
 nomfeed add <url> --extract          # URL → markdown + LLM extraction
 nomfeed add <file>                   # File → markdown
 nomfeed note "some text"             # Quick note
+nomfeed annotate <url-or-id>         # Open a page and start an annotation workflow
 
 # Retrieve
-nomfeed list                         # List everything (✦ = has extraction)
+nomfeed list                         # List everything (✦ = has extraction, ⌘ = captures)
+nomfeed list --has-captures          # Only pages with captures
 nomfeed read <id>                    # Print markdown content
 nomfeed read <id> --extract          # Print extraction only
 nomfeed read <id> --full             # Print both
+nomfeed read <id> --captures         # Print captures only
+nomfeed read <id> --bundle           # Print content + extraction + captures
 nomfeed search "query"               # Full-text search
 
 # Extract
@@ -129,7 +135,7 @@ nomfeed patterns  # will show custom patterns
 nomfeed mcp  # starts stdio MCP server
 ```
 
-**Tools:** `nomfeed_add`, `nomfeed_list`, `nomfeed_read` (content/extract/full), `nomfeed_search`, `nomfeed_extract`, `nomfeed_delete`, `nomfeed_status`
+**Tools:** `nomfeed_add`, `nomfeed_list`, `nomfeed_read` (content/extract/full/captures/bundle), `nomfeed_search`, `nomfeed_extract`, `nomfeed_delete`, `nomfeed_status`
 
 ### Claude Desktop / Cursor / Windsurf Config
 
@@ -148,9 +154,17 @@ nomfeed mcp  # starts stdio MCP server
 
 1. Run `nomfeed serve` (starts local HTTP server on port 24242)
 2. `chrome://extensions` → Developer Mode → Load unpacked → select `extension/`
-3. Click the NomFeed icon or right-click any page → "Save to NomFeed"
+3. Use one of three paths:
+   - click the floating launcher injected into the page
+   - click the browser action popup
+   - right-click any page → "Save to NomFeed"
 
-The extension supports tagging and optional extraction on save.
+The floating launcher opens a lightweight command deck with:
+- Save Page
+- Save + Extract
+- Annotate Page
+
+Choosing `Annotate Page` opens an in-page capture tray for selecting elements, adding notes, and saving screenshots into the owning page item.
 
 ## HTTP API
 
@@ -161,9 +175,13 @@ nomfeed serve --port 8080
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/add` | Save URL, file, or note. `{ url, title?, tags?, extract? }` |
-| `GET` | `/items` | List items. `?query=&tag=&type=&limit=` |
+| `POST` | `/add` | Save URL, file, or note. `{ url, title?, tags?, extract?, capture? }` |
+| `GET` | `/items` | List items. `?query=&tag=&type=&limit=&hasCaptures=1` |
 | `GET` | `/items/:id` | Get item metadata + content |
+| `GET` | `/items/:id/bundle` | Get item + content + extraction + captures |
+| `GET` | `/items/:id/captures` | List captures for one page |
+| `POST` | `/items/:id/captures` | Save a capture for one page |
+| `GET` | `/captures/:id` | Get one capture |
 | `DELETE` | `/items/:id` | Delete item |
 | `GET` | `/search?q=` | Full-text search |
 | `GET` | `/health` | Health check |
@@ -172,16 +190,24 @@ nomfeed serve --port 8080
 
 Everything lives in `~/.nomfeed/` (override with `NOMFEED_DIR`):
 
-```
+```text
 ~/.nomfeed/
-├── items.json              # metadata index (array of items)
-└── content/
-    ├── abc123.md           # converted markdown
-    ├── abc123.extraction.md # LLM extraction (if extracted)
-    └── def456.md
+├── index.json              # page-centric metadata index
+├── items.json              # legacy-compatible mirror
+├── items/
+│   └── abc123/
+│       ├── item.json
+│       ├── source.md
+│       ├── extraction.md
+│       └── captures/
+│           └── cap_001/
+│               ├── annotation.json
+│               └── screenshots/
+│                   └── full.png
+└── content/                # legacy flat-file reads remain supported
 ```
 
-Each `.md` file includes YAML frontmatter with source, title, and timestamp. Files are self-contained — you can copy them anywhere and they still make sense.
+Each page item groups content, extraction, and capture sessions together. Search also considers capture text, so annotation notes become part of the local knowledge base.
 
 ## Environment Variables
 

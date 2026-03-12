@@ -17,13 +17,29 @@
  *   nomfeed status                  Show stats
  */
 
-import { addItem, listItems, readContent, readExtraction, saveExtraction, searchContent, deleteItem, getItem, itemCount, getDataDir } from "./store";
+import {
+  addItem,
+  deleteItem,
+  findItemBySource,
+  getDataDir,
+  getItem,
+  itemCount,
+  listCaptures,
+  listItems,
+  readBundle,
+  readContent,
+  readExtraction,
+  saveExtraction,
+  searchContent,
+  totalCaptureCount,
+} from "./store";
 import { urlToMarkdown, fileToMarkdown, noteToMarkdown } from "./convert";
 import { extract } from "./extract";
 import { listPatterns, DEFAULT_EXTRACT_PATTERNS } from "./patterns";
 import { isConfigured, getConfig } from "./llm";
 import { startServer } from "./server";
 import { startMcp } from "./mcp";
+import { importBookmarks, type ImportSource } from "./import";
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -43,8 +59,8 @@ function stripFlags(a: string[]): string[] {
   const result: string[] = [];
   for (let i = 0; i < a.length; i++) {
     if (a[i].startsWith("--")) {
-      // Boolean flags (no value): --json, --extract, --full
-      if (["--json", "--extract", "--full"].includes(a[i])) {
+      // Boolean flags (no value)
+      if (["--json", "--extract", "--full", "--bundle", "--captures", "--has-captures", "--no-open"].includes(a[i])) {
         continue;
       }
       i++; // skip the flag value too
@@ -80,6 +96,28 @@ function err(msg: string, code = 1) {
 
 function progress(msg: string) {
   if (!json) process.stderr.write(`  ${msg}\n`);
+}
+
+async function openInBrowser(target: string): Promise<boolean> {
+  const command = process.platform === "darwin"
+    ? "open"
+    : process.platform === "linux"
+      ? "xdg-open"
+      : null;
+
+  if (!command) return false;
+
+  try {
+    const proc = Bun.spawn([command, target], {
+      stdin: "ignore",
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    const exitCode = await proc.exited;
+    return exitCode === 0;
+  } catch {
+    return false;
+  }
 }
 
 async function main() {
@@ -143,6 +181,168 @@ async function main() {
       } catch (e: any) {
         err(e.message);
       }
+      break;
+    }
+
+    // ── import ───────────────────────────────────────────────────────────
+    case "import": {
+      const filePath = args[1];
+      if (!filePath) err("Usage: nomfeed import <file> [--source twitter|browser|json] [--fetch] [--extract] [--tags a,b]");
+
+      const source = (flag("source") || "json") as ImportSource;
+      const doFetch = hasFlag("fetch");
+      const doExtract = hasFlag("extract");
+      const importTags = flag("tags")?.split(",").map(t => t.trim()) || [];
+      const model = flag("model");
+
+      progress(`Importing from ${filePath} (${source})...`);
+
+      const result = importBookmarks(filePath, source);
+
+      if (result.errors.length > 0) {
+        for (const error of result.errors) {
+          progress(`Warning: ${error}`);
+        }
+      }
+
+      if (result.items.length === 0) {
+        err("No items found to import.");
+      }
+
+      progress(`Found ${result.items.length} item(s) to import`);
+
+      const imported: typeof result.items = [];
+      const failed: { item: typeof result.items[0]; error: string }[] = [];
+
+      for (const item of result.items) {
+        try {
+          // Merge tags
+          const tags = [...new Set([...(item.tags || []), ...importTags])];
+
+          if (doFetch) {
+            // Fetch content and save as markdown
+            progress(`Fetching ${item.url}...`);
+            const result = await urlToMarkdown(item.url);
+
+            const savedItem = addItem({
+              type: "url",
+              source: item.url,
+              title: item.title || result.title,
+              markdown: result.markdown,
+              tags,
+              strategy: result.strategy,
+            });
+
+            // Run extraction if requested
+            if (doExtract && isConfigured()) {
+              const patterns = DEFAULT_EXTRACT_PATTERNS;
+              progress(`Extracting ${savedItem.id}...`);
+
+              try {
+                const extraction = await extract(result.markdown, patterns, { model });
+                saveExtraction(savedItem.id, extraction.composed, patterns);
+                savedItem.extracted = true;
+                savedItem.extractionPatterns = patterns;
+              } catch (e: any) {
+                progress(`Extraction failed for ${savedItem.id}: ${e.message}`);
+              }
+            }
+
+            imported.push({ ...item, title: savedItem.title });
+          } else {
+            // Just store the URL as a note item (no fetch)
+            const savedItem = addItem({
+              type: "note",
+              source: item.url,
+              title: item.title || "Bookmark",
+              markdown: `# ${item.title || "Bookmark"}\n\n**URL:** ${item.url}\n\n${item.description || ""}`,
+              tags: [...tags, "bookmark", item.sourceType],
+            });
+
+            imported.push({ ...item, title: savedItem.title });
+          }
+        } catch (e: any) {
+          failed.push({ item, error: e.message });
+          progress(`Failed: ${item.url} - ${e.message}`);
+        }
+      }
+
+      if (json) {
+        out({
+          imported: imported.length,
+          failed: failed.length,
+          total: result.items.length,
+          items: imported,
+          errors: failed.map(f => ({ url: f.item.url, error: f.error })),
+        });
+      } else {
+        console.log(`\nImport complete:`);
+        console.log(`  Imported: ${imported.length}`);
+        console.log(`  Failed: ${failed.length}`);
+        console.log(`  Total: ${result.items.length}`);
+        if (doFetch) {
+          console.log(`\nContent fetched and saved. Use 'nomfeed list' to view.`);
+        } else {
+          console.log(`\nURLs saved as notes. Use --fetch to convert to markdown.`);
+        }
+      }
+      break;
+    }
+
+    // ── annotate ─────────────────────────────────────────────────────────
+    case "annotate": {
+      const target = args[1];
+      if (!target) err("Usage: nomfeed annotate <url-or-id> [--no-open]");
+
+      try {
+        let item;
+        let url: string;
+
+        if (target.startsWith("http://") || target.startsWith("https://")) {
+          url = target;
+          item = findItemBySource({ type: "url", source: target });
+
+          if (!item) {
+            progress(`Fetching ${target}...`);
+            const result = await urlToMarkdown(target);
+            progress(`Fetched via ${result.strategy}`);
+            item = addItem({
+              type: "url",
+              source: target,
+              title: result.title,
+              markdown: result.markdown,
+              strategy: result.strategy,
+            });
+          }
+        } else {
+          item = getItem(target);
+          if (!item) err(`Not found: ${target}`, 1);
+          if (!item) return; // type guard
+          if (item.type !== "url") err("Annotate currently only supports saved URL items.", 1);
+          if (item.type !== "url") return; // type guard
+          url = item.source;
+        }
+
+        const opened = hasFlag("no-open") ? false : await openInBrowser(url);
+        const data = {
+          item,
+          url,
+          opened,
+          nextStep: "Use the floating NomFeed launcher on the page and choose Annotate Page.",
+        };
+
+        if (json) {
+          out(data);
+        } else {
+          console.log(`Annotation target ready: ${item.id}`);
+          console.log(`URL: ${url}`);
+          console.log(opened ? "Opened in browser." : "Browser not opened automatically.");
+          console.log("Next: use the floating NomFeed launcher on the page and choose Annotate Page.");
+        }
+      } catch (e: any) {
+        err(e.message);
+      }
+
       break;
     }
 
@@ -243,12 +443,13 @@ async function main() {
     // ── list ─────────────────────────────────────────────────────────────
     case "list":
     case "ls": {
-      const items = listItems({
-        query: flag("query") || flag("q"),
-        tag: flag("tag"),
-        type: flag("type"),
-        limit: flag("limit") ? parseInt(flag("limit")!) : undefined,
-      });
+        const items = listItems({
+          query: flag("query") || flag("q"),
+          tag: flag("tag"),
+          type: flag("type"),
+          limit: flag("limit") ? parseInt(flag("limit")!) : undefined,
+          hasCaptures: hasFlag("has-captures"),
+        });
 
       if (!json) {
         if (items.length === 0) {
@@ -260,7 +461,8 @@ async function main() {
           const tags = item.tags.length ? ` [${item.tags.join(", ")}]` : "";
           const strat = item.strategy ? ` (${item.strategy})` : "";
           const ext = item.extracted ? " ✦" : "";
-          console.log(`  ${item.id}  ${item.type.padEnd(4)}  ${date}  ${item.title}${tags}${strat}${ext}`);
+          const cap = item.captureCount ? ` ⌘${item.captureCount}` : "";
+          console.log(`  ${item.id}  ${item.type.padEnd(4)}  ${date}  ${item.title}${tags}${strat}${ext}${cap}`);
         }
         console.log(`\n${items.length} item(s)`);
       } else {
@@ -273,23 +475,31 @@ async function main() {
     case "read":
     case "cat": {
       const id = args[1];
-      if (!id) err("Usage: nomfeed read <id> [--extract] [--full]");
+      if (!id) err("Usage: nomfeed read <id> [--extract] [--full] [--captures] [--bundle]");
 
       const item = getItem(id);
       if (!item) err(`Not found: ${id}`, 1);
 
       const wantExtract = hasFlag("extract");
       const wantFull = hasFlag("full");
+      const wantCaptures = hasFlag("captures");
+      const wantBundle = hasFlag("bundle");
 
       const content = readContent(id);
-      if (!content) err(`Content file missing for: ${id}`, 1);
+      if (!content && !wantCaptures && !wantBundle) err(`Content file missing for: ${id}`, 1);
 
       const extraction = readExtraction(id);
+      const captures = listCaptures(id);
+      const bundle = wantBundle ? readBundle(id) : null;
 
       if (json) {
-        const data: any = { ...item, content };
+        const data: any = wantBundle ? bundle : { ...item, content, captures };
         if (extraction) data.extraction = extraction;
         out(data);
+      } else if (wantBundle) {
+        console.log(JSON.stringify(bundle, null, 2));
+      } else if (wantCaptures) {
+        console.log(JSON.stringify(captures, null, 2));
       } else if (wantExtract) {
         if (!extraction) err(`No extraction for ${id}. Run: nomfeed extract ${id}`);
         console.log(extraction);
@@ -323,7 +533,8 @@ async function main() {
           break;
         }
         for (const r of results) {
-          console.log(`  ${r.id}  ${r.title}`);
+          const kind = r.matchType ? ` (${r.matchType})` : "";
+          console.log(`  ${r.id}  ${r.title}${kind}`);
           console.log(`         ${r.snippet}`);
           console.log();
         }
@@ -364,10 +575,12 @@ async function main() {
     // ── status ───────────────────────────────────────────────────────────
     case "status": {
       const count = itemCount();
+      const captures = totalCaptureCount();
       const dir = getDataDir();
       const llmConfig = getConfig();
       out({
         items: count,
+        captures,
         dataDir: dir,
         llm: llmConfig,
       });
@@ -384,9 +597,11 @@ nomfeed — save anything as markdown
 
 Commands:
   add <url-or-file>     Save URL or file as markdown
+  annotate <url-or-id>  Open a page for annotation
+  import <file>         Import bookmarks (Twitter, browser, JSON)
   note <text>           Save a quick note
-  list                  List saved items
-  read <id>             Output markdown content (--extract | --full)
+  list                  List saved items (--has-captures)
+  read <id>             Output markdown content (--extract | --full | --captures | --bundle)
   search <query>        Full-text search
   extract <id>          Run extraction patterns on existing item
   patterns              List available extraction patterns
@@ -401,12 +616,19 @@ Add Flags:
   --model <m>           Override LLM model (OpenRouter model ID)
   --title <t>           Override title
   --tags <a,b>          Comma-separated tags
+  --no-open             Do not open annotate target in browser
+
+Import Flags:
+  --source <type>       Source type: twitter, browser, json (auto-detected)
+  --fetch               Fetch URL content and convert to markdown
+  --extract             Run LLM extraction on imported items (requires --fetch)
 
 General Flags:
   --json                Machine-readable JSON output
   --query <q>           Filter by title/source (list)
   --tag <t>             Filter by tag (list)
   --limit <n>           Limit results
+  --has-captures        Only items with captures
 
 Environment:
   OPENROUTER_API_KEY    Required for --extract (get at openrouter.ai/keys)
@@ -416,6 +638,9 @@ Environment:
 Examples:
   nomfeed add https://example.com/article
   nomfeed add https://youtube.com/watch?v=xyz --extract
+  nomfeed annotate https://example.com/login
+  nomfeed import bookmarks.json --source twitter --fetch --extract
+  nomfeed import tweets.json --fetch --tags twitter,2024
   nomfeed add https://youtube.com/watch?v=xyz --extract --patterns wisdom,chapters,claims
   nomfeed add ./report.pdf --tags work,q4
   nomfeed read abc123 --extract            # just the extraction
